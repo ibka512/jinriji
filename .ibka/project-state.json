@@ -3,8 +3,8 @@
   "project_name": "今日记",
   "goal": "实现并公开部署融合液态玻璃、莫奈动态配色与现代和风氛围的响应式便签、待办和课程表 Web 应用",
   "mode": "PROJECT",
-  "status": "completed",
-  "current_module": "M05",
+  "status": "in_progress",
+  "current_module": "M06",
   "created_at": "2026-08-30T09:51:40.317602+00:00",
   "updated_at": "2026-08-30T23:03:00+08:00",
   "constraints": [
@@ -21,7 +21,8 @@
     "统一条目模型支持便签、待办、日程与课程之间转换",
     "采用 Vite + TypeScript 拆分数据、领域、功能、平台和 UI 层",
     "采用 Dexie 管理 IndexedDB，迁移完成后仍保留 localStorage 原始数据",
-    "Service Worker 等待用户确认后再激活新版本"
+    "Service Worker 等待用户确认后再激活新版本",
+    "v0.3 保留信息架构与数据契约，重做移动导航、排版层级和反馈细节"
   ],
   "outputs": [
     "design-system.md",
@@ -29,7 +30,8 @@
     "可安装离线 Web App",
     "GitHub Pages 公开站点",
     "v0.2 IndexedDB 数据层与 v1 兼容迁移",
-    "类型、单元、构建和浏览器四层 CI"
+    "类型、单元、构建和浏览器四层 CI",
+    "v0.3 Apple 风格胶囊 Tab Bar、圆形快速记录按钮与明朝体排版"
   ],
   "verifications": [
     "Chromium 桌面 1440px、平板 768px、手机 375/390px 关键流程通过",
@@ -44,6 +46,7 @@
     {"id": "M02", "status": "completed"},
     {"id": "M03", "status": "completed"},
     {"id": "M04", "status": "completed"},
-    {"id": "M05", "status": "completed"}
+    {"id": "M05", "status": "completed"},
+    {"id": "M06", "status": "in_progress"}
   ]
 }

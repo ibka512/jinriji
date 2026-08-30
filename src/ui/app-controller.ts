@@ -21,6 +21,7 @@ interface AppState {
 export class AppController {
   private readonly composeLayer = query<HTMLElement>("#compose-layer");
   private readonly quickEntry = query<HTMLTextAreaElement>("#quick-entry");
+  private saveInProgress = false;
 
   constructor(
     private readonly repository: AppRepository,
@@ -62,7 +63,11 @@ export class AppController {
   }
 
   private selectEntryType(type: ComposeType): void {
-    queryAll<HTMLButtonElement>("[data-entry-type]").forEach((button) => button.classList.toggle("is-active", button.dataset.entryType === type));
+    queryAll<HTMLButtonElement>("[data-entry-type]").forEach((button) => {
+      const active = button.dataset.entryType === type;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
     query<HTMLElement>("#entry-details").hidden = !["task", "schedule", "course"].includes(type);
     query<HTMLElement>("#compose-title").textContent = type === "course" ? "添加哪一门课程？" : type === "task" ? "接下来要做什么？" : type === "schedule" ? "把什么安排进时间？" : "此刻想到什么？";
   }
@@ -82,36 +87,52 @@ export class AppController {
   }
 
   private async saveEntry(): Promise<void> {
+    if (this.saveInProgress) return;
     const text = this.quickEntry.value.trim();
     if (!text) {
       this.quickEntry.focus();
       showToast("先写下一点什么吧");
       return;
     }
+    const saveButton = query<HTMLButtonElement>("#save-entry");
     const type = query<HTMLButtonElement>("[data-entry-type].is-active").dataset.entryType as ComposeType;
     const date = query<HTMLInputElement>("#entry-date").value;
     const time = query<HTMLInputElement>("#entry-time").value;
     const scheduledAt = combineLocalDateTime(date, time);
 
-    if (type === "course") {
-      await this.repository.createCourse({ name: text, firstMeetingAt: scheduledAt });
-    } else {
-      const kind = type === "task" ? "task" : type === "schedule" ? "event" : "note";
-      await this.repository.createItem({
-        title: text,
-        kind,
-        dueAt: kind === "task" ? scheduledAt : undefined,
-        startAt: kind === "event" ? scheduledAt : undefined,
-        allDay: Boolean(date && !time),
-      });
-    }
+    this.saveInProgress = true;
+    saveButton.disabled = true;
+    saveButton.setAttribute("aria-busy", "true");
+    saveButton.textContent = "保存中…";
+    try {
+      if (type === "course") {
+        await this.repository.createCourse({ name: text, firstMeetingAt: scheduledAt });
+      } else {
+        const kind = type === "task" ? "task" : type === "schedule" ? "event" : "note";
+        await this.repository.createItem({
+          title: text,
+          kind,
+          dueAt: kind === "task" ? scheduledAt : undefined,
+          startAt: kind === "event" ? scheduledAt : undefined,
+          allDay: Boolean(date && !time),
+        });
+      }
 
-    await this.refresh();
-    this.quickEntry.value = "";
-    query<HTMLInputElement>("#entry-date").value = "";
-    query<HTMLInputElement>("#entry-time").value = "";
-    this.closeCompose();
-    showToast(type === "task" ? "已经加入今日待办" : type === "course" ? "课程已经添加" : "已经收进今日记");
+      await this.refresh();
+      this.quickEntry.value = "";
+      query<HTMLInputElement>("#entry-date").value = "";
+      query<HTMLInputElement>("#entry-time").value = "";
+      this.closeCompose();
+      showToast(type === "task" ? "已经加入今日待办" : type === "course" ? "课程已经添加" : "已经收进今日记");
+    } catch (error) {
+      console.error("记录保存失败", error);
+      showToast("保存失败，请稍后再试");
+    } finally {
+      this.saveInProgress = false;
+      saveButton.disabled = false;
+      saveButton.removeAttribute("aria-busy");
+      saveButton.textContent = "保存记录";
+    }
   }
 
   private setPlanTab(name: string): void {
@@ -179,9 +200,6 @@ export class AppController {
       void this.settings.set("glass", this.state.glass);
       showToast(this.state.glass ? "液态玻璃已经开启" : "已切换为实色表面");
     });
-    queryAll<HTMLButtonElement>(".filter-row button").forEach((button) => button.addEventListener("click", () => {
-      queryAll<HTMLButtonElement>("button", button.parentElement ?? document).forEach((item) => item.classList.toggle("is-active", item === button));
-    }));
     queryAll<HTMLButtonElement>("[data-plan-tab]").forEach((button) => button.addEventListener("click", () => this.setPlanTab(button.dataset.planTab || "week")));
     query<HTMLButtonElement>("#export-data").addEventListener("click", () => this.exportData());
     query<HTMLInputElement>("#import-data").addEventListener("change", (event) => void this.importData((event.currentTarget as HTMLInputElement).files?.[0]));

@@ -52,6 +52,16 @@
       "expected_outputs": ["CI 工作流", "生产构建", "多视口截图", "v0.2 Pages"],
       "verification": "CI 与 Pages 成功，线上站点可访问且核心流程通过",
       "status": "completed"
+    },
+    {
+      "id": "M06",
+      "name": "v0.3 界面与体验重塑",
+      "objective": "在保留数据与信息架构的前提下，统一 Apple 风格操作层、中文明朝体排版与多端交互反馈",
+      "owner": "web-design-engineer",
+      "support": ["apple-design", "webapp-testing"],
+      "expected_outputs": ["胶囊 Tab Bar", "圆形快速记录按钮", "响应式排版令牌", "多视口视觉验收"],
+      "verification": "320/390/768/1440 视口、深色、降低动态、200% 字号与核心创建流程通过",
+      "status": "in_progress"
     }
   ]
 }
