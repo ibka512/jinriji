@@ -10,6 +10,7 @@
     <title>今日记</title>
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="/fonts/noto-serif-sc/noto-serif-sc.css" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">跳到主要内容</a>
@@ -142,7 +143,7 @@
             <div><span class="eyebrow">让时间有形</span><h1 tabindex="-1">计划</h1><p>待办、日历与课程，在同一条时间线上彼此照应。</p></div>
             <button class="primary-button" type="button" data-open-compose data-compose-type="task">添加事项</button>
           </header>
-          <div class="segmented glass" role="tablist" aria-label="计划视图"><button class="is-active" role="tab" aria-selected="true" data-plan-tab="week">本周</button><button role="tab" aria-selected="false" data-plan-tab="tasks">待办</button><button role="tab" aria-selected="false" data-plan-tab="courses">课程表</button></div>
+          <div class="segmented glass" role="tablist" aria-label="计划视图"><span class="segmented__selection" aria-hidden="true"></span><button class="is-active" role="tab" aria-selected="true" data-plan-tab="week">本周</button><button role="tab" aria-selected="false" data-plan-tab="tasks">待办</button><button role="tab" aria-selected="false" data-plan-tab="courses">课程表</button></div>
           <div class="plan-panel is-active" data-plan-panel="week">
           <div class="week-board paper-card">
             <div class="week-head"><span>时间</span><strong>一<small>31</small></strong><strong>二<small>01</small></strong><strong>三<small>02</small></strong><strong>四<small>03</small></strong><strong>五<small>04</small></strong></div>

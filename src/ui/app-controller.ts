@@ -21,6 +21,8 @@ interface AppState {
 export class AppController {
   private readonly composeLayer = query<HTMLElement>("#compose-layer");
   private readonly quickEntry = query<HTMLTextAreaElement>("#quick-entry");
+  private composeTrigger: HTMLElement | null = null;
+  private composeCloseTimer: number | undefined;
   private saveInProgress = false;
 
   constructor(
@@ -57,7 +59,7 @@ export class AppController {
     this.state.view = name;
     localStorage.setItem("jinriji:view", name);
     if (focusHeading) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: "auto" });
       target.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
     }
   }
@@ -72,8 +74,15 @@ export class AppController {
     query<HTMLElement>("#compose-title").textContent = type === "course" ? "添加哪一门课程？" : type === "task" ? "接下来要做什么？" : type === "schedule" ? "把什么安排进时间？" : "此刻想到什么？";
   }
 
-  private openCompose(type: ComposeType): void {
+  private openCompose(type: ComposeType, trigger?: HTMLElement): void {
+    window.clearTimeout(this.composeCloseTimer);
+    this.composeLayer.classList.remove("is-closing");
     this.selectEntryType(type);
+    this.composeTrigger = trigger ?? (
+      document.activeElement instanceof HTMLElement && document.activeElement !== document.body
+        ? document.activeElement
+        : null
+    );
     this.composeLayer.classList.add("is-open");
     this.composeLayer.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
@@ -81,9 +90,35 @@ export class AppController {
   }
 
   private closeCompose(): void {
+    if (!this.composeLayer.classList.contains("is-open")) return;
+    this.composeLayer.classList.add("is-closing");
     this.composeLayer.classList.remove("is-open");
     this.composeLayer.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
+    this.composeCloseTimer = window.setTimeout(() => this.composeLayer.classList.remove("is-closing"), 320);
+    this.composeTrigger?.focus({ preventScroll: true });
+    this.composeTrigger = null;
+  }
+
+  private keepFocusInCompose(event: KeyboardEvent): void {
+    if (event.key !== "Tab" || !this.composeLayer.classList.contains("is-open")) return;
+    const focusable = queryAll<HTMLElement>(
+      "button:not([disabled]), textarea:not([disabled]), input:not([disabled])",
+      this.composeLayer,
+    ).filter((element) => !element.hasAttribute("hidden") && element.getClientRects().length > 0);
+    const first = focusable.at(0);
+    const last = focusable.at(-1);
+    if (!first || !last) return;
+    if (!(document.activeElement instanceof Node) || !this.composeLayer.contains(document.activeElement)) {
+      event.preventDefault();
+      first.focus();
+    } else if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   }
 
   private async saveEntry(): Promise<void> {
@@ -178,7 +213,7 @@ export class AppController {
   private bindEvents(): void {
     queryAll<HTMLButtonElement>("[data-view]").forEach((button) => button.addEventListener("click", () => this.setView(button.dataset.view as ViewName, true)));
     queryAll<HTMLButtonElement>("[data-view-jump]").forEach((button) => button.addEventListener("click", () => this.setView(button.dataset.viewJump as ViewName, true)));
-    queryAll<HTMLButtonElement>("[data-open-compose]").forEach((button) => button.addEventListener("click", () => this.openCompose((button.dataset.composeType || "note") as ComposeType)));
+    queryAll<HTMLButtonElement>("[data-open-compose]").forEach((button) => button.addEventListener("click", () => this.openCompose((button.dataset.composeType || "note") as ComposeType, button)));
     queryAll<HTMLButtonElement>("[data-close-compose]").forEach((button) => button.addEventListener("click", () => this.closeCompose()));
     query<HTMLButtonElement>("#save-entry").addEventListener("click", () => void this.saveEntry());
     queryAll<HTMLButtonElement>("[data-entry-type]").forEach((button) => button.addEventListener("click", () => this.selectEntryType(button.dataset.entryType as ComposeType)));
@@ -207,6 +242,7 @@ export class AppController {
     document.addEventListener("click", (event) => void this.handleDocumentClick(event));
     document.addEventListener("change", (event) => void this.handleDocumentChange(event));
     document.addEventListener("keydown", (event) => {
+      this.keepFocusInCompose(event);
       if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && this.composeLayer.classList.contains("is-open")) void this.saveEntry();
       if (event.key === "Escape" && this.composeLayer.classList.contains("is-open")) this.closeCompose();
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "jinriji-v2";
+const CACHE_NAME = "jinriji-v3";
 const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", (event) => {
