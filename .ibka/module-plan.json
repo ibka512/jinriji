@@ -61,7 +61,7 @@
       "support": ["apple-design", "webapp-testing"],
       "expected_outputs": ["胶囊 Tab Bar", "圆形快速记录按钮", "响应式排版令牌", "多视口视觉验收"],
       "verification": "320/390/768/1440 视口、深色、降低动态、200% 字号与核心创建流程通过",
-      "status": "in_progress"
+      "status": "completed"
     }
   ]
 }
