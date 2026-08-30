@@ -3,10 +3,10 @@
   "project_name": "今日记",
   "goal": "实现并公开部署融合液态玻璃、莫奈动态配色与现代和风氛围的响应式便签、待办和课程表 Web 应用",
   "mode": "PROJECT",
-  "status": "in_progress",
+  "status": "completed",
   "current_module": "M05",
   "created_at": "2026-08-30T09:51:40.317602+00:00",
-  "updated_at": "2026-08-30T22:55:00+08:00",
+  "updated_at": "2026-08-30T23:03:00+08:00",
   "constraints": [
     "公开 GitHub 仓库并使用 GitHub Pages 托管",
     "手机竖屏、平板与 Web 横屏自适应",
@@ -34,13 +34,16 @@
   "verifications": [
     "Chromium 桌面 1440px、平板 768px、手机 375/390px 关键流程通过",
     "手机横屏、深色模式、125% 字体与减少动态模式通过",
-    "GitHub Pages HTTPS 部署通过"
+    "GitHub Pages HTTPS 部署通过",
+    "v0.2 TypeScript 类型检查、4 个单元测试与生产构建通过",
+    "本地和公开站点的浏览器验收、旧数据迁移与 Service Worker 激活通过",
+    "GitHub Quality checks 与 Deploy to GitHub Pages 工作流通过"
   ],
   "modules": [
     {"id": "M01", "status": "completed"},
     {"id": "M02", "status": "completed"},
     {"id": "M03", "status": "completed"},
     {"id": "M04", "status": "completed"},
-    {"id": "M05", "status": "in_progress"}
+    {"id": "M05", "status": "completed"}
   ]
 }

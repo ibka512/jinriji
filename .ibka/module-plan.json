@@ -51,7 +51,7 @@
       "support": ["apple-design"],
       "expected_outputs": ["CI 工作流", "生产构建", "多视口截图", "v0.2 Pages"],
       "verification": "CI 与 Pages 成功，线上站点可访问且核心流程通过",
-      "status": "in_progress"
+      "status": "completed"
     }
   ]
 }
