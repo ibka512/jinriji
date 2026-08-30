@@ -1,0 +1,19 @@
+{
+  "name": "今日记",
+  "short_name": "今日记",
+  "description": "在一处安静地记录今天、完成事情、安排课程。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#edf0e9",
+  "theme_color": "#667b68",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

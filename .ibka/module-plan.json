@@ -22,7 +22,7 @@
       "support": ["apple-design"],
       "expected_outputs": ["响应式静态 Web 应用", "本地持久化交互"],
       "verification": "代码自检与浏览器关键流程验证",
-      "status": "active"
+      "status": "completed"
     },
     {
       "id": "M03",
@@ -31,7 +31,7 @@
       "owner": "webapp-testing",
       "expected_outputs": ["Playwright 验收证据", "公开 Pages 地址"],
       "verification": "375、768、1440 三视口与核心交互通过",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
