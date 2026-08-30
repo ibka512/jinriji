@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "project_name": "今日记",
+  "goal": "实现并公开部署融合液态玻璃、莫奈动态配色与现代和风氛围的响应式便签、待办和课程表 Web 应用",
+  "mode": "PROJECT",
+  "status": "active",
+  "current_module": "M02",
+  "created_at": "2026-08-30T09:51:40.317602+00:00",
+  "updated_at": "2026-08-30T09:51:40.317602+00:00",
+  "constraints": [
+    "公开 GitHub 仓库并使用 GitHub Pages 托管",
+    "手机竖屏、平板与 Web 横屏自适应",
+    "MVP 不新增生产依赖"
+  ],
+  "decisions": [
+    "采用原生 HTML/CSS/JavaScript 以降低部署复杂度",
+    "液态玻璃仅用于导航和操作层，正文使用纸张表面",
+    "使用语义色 token 承接莫奈动态主题",
+    "统一条目模型支持便签、待办、日程与课程之间转换"
+  ],
+  "outputs": [
+    "design-system.md",
+    "响应式交互 v0"
+  ],
+  "verifications": [
+    "Chromium 桌面 1440px 与手机 390px 关键流程通过"
+  ],
+  "modules": [
+    {"id": "M01", "status": "completed"},
+    {"id": "M02", "status": "active"},
+    {"id": "M03", "status": "pending"}
+  ]
+}

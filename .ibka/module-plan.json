@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "project_name": "今日记",
+  "goal": "实现并公开部署融合液态玻璃、莫奈动态配色与现代和风氛围的响应式便签、待办和课程表 Web 应用",
+  "mode": "PROJECT",
+  "modules": [
+    {
+      "id": "M01",
+      "name": "产品与设计系统",
+      "objective": "固化统一条目模型、响应式信息架构与视觉令牌",
+      "owner": "ui-ux-pro-max",
+      "support": ["apple-design"],
+      "expected_outputs": ["design-system.md", "可复用 CSS tokens"],
+      "verification": "检查四个主入口、三种视口和无障碍降级规则",
+      "status": "completed"
+    },
+    {
+      "id": "M02",
+      "name": "可交互 Web MVP",
+      "objective": "实现今日、记录、计划、我的及快速记录闭环",
+      "owner": "web-design-engineer",
+      "support": ["apple-design"],
+      "expected_outputs": ["响应式静态 Web 应用", "本地持久化交互"],
+      "verification": "代码自检与浏览器关键流程验证",
+      "status": "active"
+    },
+    {
+      "id": "M03",
+      "name": "质量与发布",
+      "objective": "完成响应式、控制台、交互与 GitHub Pages 验收",
+      "owner": "webapp-testing",
+      "expected_outputs": ["Playwright 验收证据", "公开 Pages 地址"],
+      "verification": "375、768、1440 三视口与核心交互通过",
+      "status": "pending"
+    }
+  ]
+}
