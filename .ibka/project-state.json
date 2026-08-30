@@ -3,26 +3,33 @@
   "project_name": "今日记",
   "goal": "实现并公开部署融合液态玻璃、莫奈动态配色与现代和风氛围的响应式便签、待办和课程表 Web 应用",
   "mode": "PROJECT",
-  "status": "completed",
-  "current_module": "M03",
+  "status": "in_progress",
+  "current_module": "M05",
   "created_at": "2026-08-30T09:51:40.317602+00:00",
-  "updated_at": "2026-08-30T09:51:40.317602+00:00",
+  "updated_at": "2026-08-30T22:55:00+08:00",
   "constraints": [
     "公开 GitHub 仓库并使用 GitHub Pages 托管",
     "手机竖屏、平板与 Web 横屏自适应",
-    "MVP 不新增生产依赖"
+    "v0.2 仅新增已批准的 Dexie 生产依赖",
+    "保留现有视觉、交互和 GitHub Pages 地址",
+    "旧版数据必须可迁移、可回退且不得删除"
   ],
   "decisions": [
     "采用原生 HTML/CSS/JavaScript 以降低部署复杂度",
     "液态玻璃仅用于导航和操作层，正文使用纸张表面",
     "使用语义色 token 承接莫奈动态主题",
-    "统一条目模型支持便签、待办、日程与课程之间转换"
+    "统一条目模型支持便签、待办、日程与课程之间转换",
+    "采用 Vite + TypeScript 拆分数据、领域、功能、平台和 UI 层",
+    "采用 Dexie 管理 IndexedDB，迁移完成后仍保留 localStorage 原始数据",
+    "Service Worker 等待用户确认后再激活新版本"
   ],
   "outputs": [
     "design-system.md",
     "响应式交互 MVP",
     "可安装离线 Web App",
-    "GitHub Pages 公开站点"
+    "GitHub Pages 公开站点",
+    "v0.2 IndexedDB 数据层与 v1 兼容迁移",
+    "类型、单元、构建和浏览器四层 CI"
   ],
   "verifications": [
     "Chromium 桌面 1440px、平板 768px、手机 375/390px 关键流程通过",
@@ -32,6 +39,8 @@
   "modules": [
     {"id": "M01", "status": "completed"},
     {"id": "M02", "status": "completed"},
-    {"id": "M03", "status": "completed"}
+    {"id": "M03", "status": "completed"},
+    {"id": "M04", "status": "completed"},
+    {"id": "M05", "status": "in_progress"}
   ]
 }

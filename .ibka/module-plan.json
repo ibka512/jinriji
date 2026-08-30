@@ -32,6 +32,26 @@
       "expected_outputs": ["Playwright 验收证据", "公开 Pages 地址"],
       "verification": "375、768、1440 三视口与核心交互通过",
       "status": "completed"
+    },
+    {
+      "id": "M04",
+      "name": "v0.2 数据与工程化",
+      "objective": "在保留界面和公开地址的前提下引入 TypeScript、IndexedDB 与安全迁移",
+      "owner": "web-design-engineer",
+      "support": ["research-before-build"],
+      "expected_outputs": ["模块化源码", "Dexie 数据库", "v1 数据迁移与备份", "v2 JSON 导入导出"],
+      "verification": "类型检查、迁移幂等性、仓储和备份兼容测试",
+      "status": "completed"
+    },
+    {
+      "id": "M05",
+      "name": "v0.2 质量与发布",
+      "objective": "建立 CI、验证多端交互并更新 GitHub Pages",
+      "owner": "webapp-testing",
+      "support": ["apple-design"],
+      "expected_outputs": ["CI 工作流", "生产构建", "多视口截图", "v0.2 Pages"],
+      "verification": "CI 与 Pages 成功，线上站点可访问且核心流程通过",
+      "status": "in_progress"
     }
   ]
 }
