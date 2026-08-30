@@ -4,9 +4,9 @@
   "goal": "实现并公开部署融合液态玻璃、莫奈动态配色与现代和风氛围的响应式便签、待办和课程表 Web 应用",
   "mode": "PROJECT",
   "status": "completed",
-  "current_module": "M06",
+  "current_module": "M07",
   "created_at": "2026-08-30T09:51:40.317602+00:00",
-  "updated_at": "2026-08-31T02:56:23+08:00",
+  "updated_at": "2026-08-31T03:00:00+08:00",
   "constraints": [
     "公开 GitHub 仓库并使用 GitHub Pages 托管",
     "手机竖屏、平板与 Web 横屏自适应",
@@ -44,7 +44,8 @@
     "GitHub Quality checks 与 Deploy to GitHub Pages 工作流通过",
     "v0.3 本地与线上 320/390/768/1440 视口、200% 字号、深色和降低动态验收通过",
     "v0.3 GitHub Pages 已确认包含胶囊 Tab Bar、圆形快速记录按钮与设置入口",
-    "v0.4 本地 320/390/768/1440 视口、横屏、深色、减少动态、200% 字号与旧数据迁移通过"
+    "v0.4 本地 320/390/768/1440 视口、横屏、深色、减少动态、200% 字号与旧数据迁移通过",
+    "v0.4 GitHub Quality checks 与 Pages 部署通过，线上字体 CSS 和二进制校验与本地一致，Service Worker 缓存升级为 v3"
   ],
   "modules": [
     {"id": "M01", "status": "completed"},
