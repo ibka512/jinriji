@@ -11,11 +11,10 @@ async function bootstrap(): Promise<void> {
   const migration = await migrateLocalStorage(db, localStorage);
   const repository = new AppRepository(db);
   const settings = new SettingsRepository(db);
-  const [items, courses, storedTheme, glass] = await Promise.all([
+  const [items, courses, storedTheme] = await Promise.all([
     repository.listItems(),
     repository.listCourses(),
     settings.get("theme", localStorage.getItem("jinriji:theme") || "sage"),
-    settings.get("glass", localStorage.getItem("jinriji:glass") !== "off"),
   ]);
   const rawTheme = String(storedTheme);
   const theme = isThemeName(rawTheme) ? rawTheme : "sage";
@@ -23,7 +22,6 @@ async function bootstrap(): Promise<void> {
   const controller = new AppController(repository, settings, {
     view: view === "notes" || view === "plan" || view === "settings" ? view : "today",
     theme,
-    glass: Boolean(glass),
     items,
     courses,
   });

@@ -50,7 +50,7 @@
 
         <button class="profile-button" type="button" data-view="settings" aria-label="打开设置">
           <span class="avatar">周</span>
-          <span><strong>下午好</strong><small>让今天慢慢展开</small></span>
+          <span><strong>我的空间</strong></span>
         </button>
       </aside>
 
@@ -60,36 +60,33 @@
             <div>
               <span class="eyebrow">二〇二六 · 处暑</span>
               <h1 tabindex="-1">八月三十，星期日</h1>
-              <p>暑气渐退，晚风里已经有一点秋意。</p>
             </div>
           </header>
 
           <div class="today-grid">
             <section class="now-card paper-card" aria-labelledby="now-title">
               <div class="card-heading">
-                <div><span class="eyebrow">现在</span><h2 id="now-title">设计史</h2></div>
+                <div><h2 id="now-title">设计史</h2></div>
                 <span class="live-pill"><i></i>进行中</span>
               </div>
               <p class="course-meta">10:00–11:40 · 艺术楼 302</p>
               <div class="time-progress"><span></span></div>
               <div class="course-footer">
                 <span>还有 46 分钟</span>
-                <button type="button" data-view-jump="notes">打开课程笔记 <span aria-hidden="true">→</span></button>
+                <button type="button" data-view-jump="notes">课程笔记 <span aria-hidden="true">→</span></button>
               </div>
-              <div class="ink-mark" aria-hidden="true">史</div>
             </section>
 
             <section class="focus-card paper-card" aria-label="今日专注">
-              <span class="eyebrow">今日专注</span>
+              <span class="eyebrow">今日完成</span>
               <strong>3 <small>/ 5</small></strong>
-              <p>已经完成三件事</p>
               <div class="focus-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
             </section>
 
             <section class="timeline-card paper-card" aria-labelledby="timeline-title">
               <div class="card-heading">
-                <div><span class="eyebrow">接下来</span><h2 id="timeline-title">今日流</h2></div>
-                <button class="text-button" type="button" data-view-jump="plan">查看周计划</button>
+                <div><h2 id="timeline-title">今日安排</h2></div>
+                <button class="text-button" type="button" data-view-jump="plan">周计划</button>
               </div>
               <ol class="timeline-list">
                 <li class="timeline-item">
@@ -117,7 +114,7 @@
 
             <section class="note-preview paper-card" aria-labelledby="note-preview-title">
               <div class="card-heading">
-                <div><span class="eyebrow">今日记录</span><h2 id="note-preview-title">一念</h2></div>
+                <div><h2 id="note-preview-title">今日记录</h2></div>
                 <span class="note-time">上午 08:42</span>
               </div>
               <blockquote>“作品集不应该只是结果的陈列，它更像是思考留下的河床。”</blockquote>
@@ -128,7 +125,7 @@
 
         <section class="view" id="view-notes" data-view-panel="notes">
           <header class="page-header compact-header">
-            <div><span class="eyebrow">拾起一念</span><h1 tabindex="-1">记录</h1><p>写下还未成形的想法，让它稍后慢慢生长。</p></div>
+            <div><h1 tabindex="-1">记录</h1></div>
             <button class="primary-button" type="button" data-open-compose>新建记录</button>
           </header>
           <div class="notes-masonry" id="notes-list">
@@ -140,7 +137,7 @@
 
         <section class="view" id="view-plan" data-view-panel="plan">
           <header class="page-header compact-header">
-            <div><span class="eyebrow">让时间有形</span><h1 tabindex="-1">计划</h1><p>待办、日历与课程，在同一条时间线上彼此照应。</p></div>
+            <div><h1 tabindex="-1">计划</h1></div>
             <button class="primary-button" type="button" data-open-compose data-compose-type="task">添加事项</button>
           </header>
           <div class="segmented glass" role="tablist" aria-label="计划视图"><span class="segmented__selection" aria-hidden="true"></span><button class="is-active" role="tab" aria-selected="true" data-plan-tab="week">本周</button><button role="tab" aria-selected="false" data-plan-tab="tasks">待办</button><button role="tab" aria-selected="false" data-plan-tab="courses">课程表</button></div>
@@ -159,7 +156,7 @@
           </div>
           <div class="plan-panel" data-plan-panel="tasks">
             <section class="task-board paper-card">
-              <div class="card-heading"><div><span class="eyebrow">尚待完成</span><h2>待办清单</h2></div><span class="count-pill" id="task-count">2</span></div>
+              <div class="card-heading"><div><h2>待办清单</h2></div><span class="count-pill" id="task-count">2</span></div>
               <div class="task-group">
                 <span class="task-group__label">今天</span>
                 <label class="task-row"><input type="checkbox" /><i></i><span><strong>提交调研提纲</strong><small>作品集项目 · 13:30</small></span><em>高</em></label>
@@ -174,17 +171,31 @@
               <article class="course-card paper-card course-card--blue"><span class="course-card__mark">数</span><span class="eyebrow">周二 · 09:00</span><h2>高等数学</h2><p>教三 201 · 陈老师</p><footer><span>1 篇笔记</span><span>无待办</span></footer></article>
               <article class="course-card paper-card course-card--warm"><span class="course-card__mark">设</span><span class="eyebrow">周四 · 08:00</span><h2>设计基础</h2><p>工作室 A · 赵老师</p><footer><span>4 篇笔记</span><span>2 项作业</span></footer></article>
               <div id="user-course-list"></div>
-              <button class="add-course-card glass" type="button" data-open-compose data-compose-type="course"><span>＋</span><strong>添加一门课程</strong><small>课程会出现在周计划中</small></button>
+              <button class="add-course-card glass" type="button" data-open-compose data-compose-type="course"><span>＋</span><strong>添加课程</strong></button>
             </div>
           </div>
         </section>
 
         <section class="view" id="view-settings" data-view-panel="settings">
-          <header class="page-header compact-header"><div><span class="eyebrow">随心而变</span><h1 tabindex="-1">设置</h1><p>选择一组让你愿意每天打开的颜色。</p></div></header>
+          <header class="page-header compact-header"><div><h1 tabindex="-1">设置</h1></div></header>
           <div class="settings-grid">
-            <section class="settings-card paper-card"><span class="eyebrow">莫奈配色</span><h2>主题色</h2><p>从季节与自然中取得颜色，再降低饱和度，让内容始终清晰。</p><div class="theme-swatches" role="radiogroup" aria-label="选择主题"><button class="theme-dot is-active" data-theme="sage" aria-label="苔庭" style="--swatch:#718471"></button><button class="theme-dot" data-theme="sakura" aria-label="樱雨" style="--swatch:#a66f78"></button><button class="theme-dot" data-theme="aizome" aria-label="蓝染" style="--swatch:#526c83"></button><button class="theme-dot" data-theme="kaki" aria-label="柿色" style="--swatch:#a86143"></button></div></section>
-            <section class="settings-card paper-card"><span class="eyebrow">界面感受</span><h2>材质与动态</h2><label class="toggle-row"><span><strong>液态玻璃</strong><small>让导航与工具浮在内容上方</small></span><input id="glass-toggle" type="checkbox" checked /><i></i></label></section>
-            <section class="settings-card paper-card data-card"><span class="eyebrow">数据自主</span><h2>导出与恢复</h2><p>你的自建记录保存在当前浏览器中，可以随时导出为 JSON 文件。</p><div class="data-actions"><button class="secondary-button" id="export-data" type="button">导出数据</button><label class="secondary-button file-button">导入数据<input id="import-data" type="file" accept="application/json" /></label></div></section>
+            <section class="settings-card paper-card" aria-labelledby="theme-heading">
+              <h2 class="settings-heading" id="theme-heading"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.5-3.3 1.8 1.8 0 0 1 1.4-2.9H18A3 3 0 0 0 21 12a9 9 0 0 0-9-9Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="11" cy="7" r=".8"/><circle cx="15.5" cy="8.5" r=".8"/></svg><span>主题</span></h2>
+              <div class="theme-swatches" role="radiogroup" aria-label="选择主题">
+                <button class="theme-dot is-active" type="button" role="radio" aria-checked="true" data-theme="sage" aria-label="苔庭" style="--swatch:#667b68"><span class="theme-dot__swatch" aria-hidden="true"></span><span>苔庭</span></button>
+                <button class="theme-dot" type="button" role="radio" aria-checked="false" tabindex="-1" data-theme="sakura" aria-label="樱雨" style="--swatch:#9d6f78"><span class="theme-dot__swatch" aria-hidden="true"></span><span>樱雨</span></button>
+                <button class="theme-dot" type="button" role="radio" aria-checked="false" tabindex="-1" data-theme="aizome" aria-label="蓝染" style="--swatch:#5a7185"><span class="theme-dot__swatch" aria-hidden="true"></span><span>蓝染</span></button>
+                <button class="theme-dot" type="button" role="radio" aria-checked="false" tabindex="-1" data-theme="kaki" aria-label="柿色" style="--swatch:#a86143"><span class="theme-dot__swatch" aria-hidden="true"></span><span>柿色</span></button>
+              </div>
+            </section>
+            <section class="settings-card paper-card data-card" aria-labelledby="data-heading">
+              <h2 class="settings-heading" id="data-heading"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="13" rx="2"/><path d="M3 3h18v5H3zM9 12h6"/></svg><span>数据与备份</span></h2>
+              <div class="data-actions">
+                <button class="settings-action" id="export-data" type="button"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></svg><span>导出数据</span><svg class="setting-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+                <label class="settings-action file-button"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M4 16v4h16v-4"/></svg><span>导入数据</span><input id="import-data" type="file" accept="application/json" aria-label="导入数据" aria-describedby="import-hint" /><svg class="setting-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></label>
+              </div>
+              <p class="settings-hint" id="import-hint">数据保存在此浏览器。导入将替换现有记录，请先导出备份。</p>
+            </section>
           </div>
         </section>
       </main>
@@ -195,7 +206,7 @@
           <div class="calendar-weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
           <div class="calendar-days"><span></span><span></span><span></span><span></span><span></span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span><span>29</span><strong>30</strong><span>31</span></div>
         </section>
-        <section class="quiet-card"><span class="moon" aria-hidden="true"></span><p>“日日是好日”</p><small>不急着抵达，先认真经过。</small></section>
+        <section class="quiet-card"><span class="moon" aria-hidden="true"></span><p>“日日是好日”</p></section>
         <section class="upcoming paper-card"><div class="card-heading"><div><span class="eyebrow">明日</span><h2>预览</h2></div><span class="count-pill">4</span></div><ul><li><time>08:00</time><span><strong>晨间阅读</strong><small>30 分钟</small></span></li><li><time>10:00</time><span><strong>设计基础</strong><small>工作室 A</small></span></li><li><time>15:30</time><span><strong>预约打印</strong><small>图文中心</small></span></li></ul></section>
       </aside>
     </div>
@@ -215,10 +226,10 @@
       <button class="compose-backdrop" data-close-compose aria-label="关闭编辑器"></button>
       <section class="compose-sheet glass" role="dialog" aria-modal="true" aria-labelledby="compose-title">
         <div class="sheet-handle" aria-hidden="true"></div>
-        <div class="compose-head"><div><span class="eyebrow">快速记录</span><h2 id="compose-title">此刻想到什么？</h2></div><button class="icon-button" data-close-compose aria-label="关闭"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+        <div class="compose-head"><div><h2 id="compose-title">新建便签</h2></div><button class="icon-button" data-close-compose aria-label="关闭"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
         <label class="sr-only" for="quick-entry">记录内容</label>
-        <textarea id="quick-entry" rows="5" placeholder="写下一句话、一个待办，或一段还没有名字的想法……"></textarea>
-        <div class="compose-options"><button class="option-chip is-active" data-entry-type="note">便签</button><button class="option-chip" data-entry-type="task">待办</button><button class="option-chip" data-entry-type="schedule">安排时间</button><button class="option-chip" data-entry-type="course">课程</button></div>
+        <textarea id="quick-entry" rows="5" placeholder="写点什么…"></textarea>
+        <div class="compose-options"><button class="option-chip is-active" data-entry-type="note">便签</button><button class="option-chip" data-entry-type="task">待办</button><button class="option-chip" data-entry-type="schedule">日程</button><button class="option-chip" data-entry-type="course">课程</button></div>
         <div class="entry-details" id="entry-details" hidden>
           <label><span>日期</span><input id="entry-date" type="date" /></label>
           <label><span>时间</span><input id="entry-time" type="time" /></label>
@@ -227,7 +238,7 @@
       </section>
     </div>
 
-    <div class="toast glass" id="toast" role="status" aria-live="polite"><span id="toast-message">已经收进今日记</span><button id="toast-action" type="button" hidden>撤销</button></div>
+    <div class="toast glass" id="toast" role="status" aria-live="polite"><span id="toast-message">已保存</span><button id="toast-action" type="button" hidden>撤销</button></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

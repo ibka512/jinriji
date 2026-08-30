@@ -13,7 +13,6 @@ type ComposeType = "note" | "task" | "schedule" | "course";
 interface AppState {
   view: ViewName;
   theme: ThemeName;
-  glass: boolean;
   items: Item[];
   courses: Course[];
 }
@@ -34,8 +33,6 @@ export class AppController {
   initialize(): void {
     renderEntries(this.state.items, this.state.courses);
     applyTheme(this.state.theme);
-    query<HTMLInputElement>("#glass-toggle").checked = this.state.glass;
-    document.body.classList.toggle("no-glass", !this.state.glass);
     this.setView(this.state.view);
     this.bindEvents();
   }
@@ -71,7 +68,7 @@ export class AppController {
       button.setAttribute("aria-pressed", String(active));
     });
     query<HTMLElement>("#entry-details").hidden = !["task", "schedule", "course"].includes(type);
-    query<HTMLElement>("#compose-title").textContent = type === "course" ? "添加哪一门课程？" : type === "task" ? "接下来要做什么？" : type === "schedule" ? "把什么安排进时间？" : "此刻想到什么？";
+    query<HTMLElement>("#compose-title").textContent = type === "course" ? "新建课程" : type === "task" ? "新建待办" : type === "schedule" ? "新建日程" : "新建便签";
   }
 
   private openCompose(type: ComposeType, trigger?: HTMLElement): void {
@@ -126,7 +123,7 @@ export class AppController {
     const text = this.quickEntry.value.trim();
     if (!text) {
       this.quickEntry.focus();
-      showToast("先写下一点什么吧");
+      showToast("请输入内容");
       return;
     }
     const saveButton = query<HTMLButtonElement>("#save-entry");
@@ -158,7 +155,7 @@ export class AppController {
       query<HTMLInputElement>("#entry-date").value = "";
       query<HTMLInputElement>("#entry-time").value = "";
       this.closeCompose();
-      showToast(type === "task" ? "已经加入今日待办" : type === "course" ? "课程已经添加" : "已经收进今日记");
+      showToast(type === "task" ? "已添加待办" : type === "course" ? "已添加课程" : "已保存");
     } catch (error) {
       console.error("记录保存失败", error);
       showToast("保存失败，请稍后再试");
@@ -180,14 +177,14 @@ export class AppController {
   }
 
   private exportData(): void {
-    const payload = JSON.stringify(createBackup(this.state.items, this.state.courses, this.state.theme, this.state.glass), null, 2);
+    const payload = JSON.stringify(createBackup(this.state.items, this.state.courses, this.state.theme, true), null, 2);
     const link = document.createElement("a");
     const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
     link.href = url;
     link.download = `今日记-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    showToast("数据已经导出");
+    showToast("已导出");
   }
 
   private async importData(file?: File): Promise<void> {
@@ -196,14 +193,12 @@ export class AppController {
       const payload = parseBackup(await file.text());
       await this.repository.replaceData(payload.items, payload.courses);
       const theme = isThemeName(payload.theme) ? payload.theme : "sage";
+      // Keep the legacy backup field readable; presentation now always uses glass.
       await Promise.all([this.settings.set("theme", theme), this.settings.set("glass", payload.glass)]);
       this.state.theme = theme;
-      this.state.glass = payload.glass;
       applyTheme(theme);
-      document.body.classList.toggle("no-glass", !payload.glass);
-      query<HTMLInputElement>("#glass-toggle").checked = payload.glass;
       await this.refresh();
-      showToast("数据已经恢复");
+      showToast("已恢复");
     } catch (error) {
       console.error(error);
       showToast("无法读取这个备份文件");
@@ -229,11 +224,16 @@ export class AppController {
       applyTheme(name);
       void this.settings.set("theme", name);
     }));
-    query<HTMLInputElement>("#glass-toggle").addEventListener("change", (event) => {
-      this.state.glass = (event.currentTarget as HTMLInputElement).checked;
-      document.body.classList.toggle("no-glass", !this.state.glass);
-      void this.settings.set("glass", this.state.glass);
-      showToast(this.state.glass ? "液态玻璃已经开启" : "已切换为实色表面");
+    query<HTMLElement>(".theme-swatches").addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+      const buttons = queryAll<HTMLButtonElement>(".theme-dot");
+      const index = buttons.findIndex((button) => button === document.activeElement);
+      if (index < 0) return;
+      event.preventDefault();
+      const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1
+        : (index + (["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 1) + buttons.length) % buttons.length;
+      buttons[next]?.focus();
+      buttons[next]?.click();
     });
     queryAll<HTMLButtonElement>("[data-plan-tab]").forEach((button) => button.addEventListener("click", () => this.setPlanTab(button.dataset.planTab || "week")));
     query<HTMLButtonElement>("#export-data").addEventListener("click", () => this.exportData());
@@ -261,14 +261,14 @@ export class AppController {
       await this.refresh();
       this.setView("plan", true);
       this.setPlanTab("tasks");
-      showToast("已经转为待办");
+      showToast("已转为待办");
     }
     if (remove?.dataset.entryDelete) {
       const id = remove.dataset.entryDelete;
       const deleted = await this.repository.softDeleteItem(id);
       if (!deleted) return;
       await this.refresh();
-      showToast("记录已删除", () => void this.repository.restoreItem(id).then(() => this.refresh()).then(() => showToast("记录已经恢复")));
+      showToast("记录已删除", () => void this.repository.restoreItem(id).then(() => this.refresh()).then(() => showToast("已恢复记录")));
     }
   }
 

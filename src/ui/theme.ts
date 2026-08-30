@@ -26,5 +26,6 @@ export function applyTheme(name: ThemeName): void {
     const selected = button.dataset.theme === name;
     button.classList.toggle("is-active", selected);
     button.setAttribute("aria-checked", String(selected));
+    button.tabIndex = selected ? 0 : -1;
   });
 }
