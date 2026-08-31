@@ -148,7 +148,7 @@ v0.6 的 v3 JSON 包含记录、课程（含最近删除）、学期、重复规
 
 ## v0.7 验证
 
-v0.7 在上述回归基础上增加导航图标实际样式、标签置顶和批量整理、重复待办、元数据草稿备份、多标签页冲突、快捷键和离线流程。11 个单元测试文件共 76 项、20 组 Chromium 浏览器流程、类型检查与生产构建通过。当前 41 张截图输出至 `test-results/screenshots-v0.7`。本轮仅本地开发与验证，未提交、推送或部署；真实 iPhone/Safari 未实机验证。
+v0.7 在上述回归基础上增加导航图标实际样式、标签置顶和批量整理、重复待办、元数据草稿备份、多标签页冲突、快捷键和离线流程。11 个单元测试文件共 76 项、20 组 Chromium 浏览器流程、类型检查与生产构建通过。当前 41 张截图输出至 `test-results/screenshots-v0.7`。已提交并推送至 `main`，GitHub Actions 质量门禁与 Pages 部署通过，线上地址为 <https://ibka512.github.io/jinriji/>；真实 iPhone/Safari 未实机验证。
 
 UI-001 来源及 MIT 许可全文见 `public/third-party-notices.txt`，会随构建一起发布。
 

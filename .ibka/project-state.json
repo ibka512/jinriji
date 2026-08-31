@@ -8,7 +8,7 @@
   "created_at": "2026-08-30T09:51:40.317602+00:00",
   "updated_at": "2026-08-31T14:38:00+08:00",
   "local_version": "0.7.0",
-  "release_status": "v0.7 本地开发与验收完成，未提交、推送或部署；保留此前未提交的 v0.5/v0.6 工作",
+  "release_status": "v0.7 已提交并推送 main，GitHub Quality checks 与 Pages 部署通过；线上地址 https://ibka512.github.io/jinriji/",
   "constraints": [
     "公开 GitHub 仓库并使用 GitHub Pages 托管",
     "手机竖屏、平板与 Web 横屏自适应",
@@ -17,7 +17,7 @@
     "旧版数据必须可迁移、可回退且不得删除",
     "v0.5 不新增生产依赖，不引入账户与云同步，不在本轮发布上线",
     "v0.6 延续本地开发边界，不新增依赖、不替换框架、不自动转换旧单次课程",
-    "v0.7 保留数据、架构和依赖；本轮只本地实现与验证，不发布"
+    "v0.7 保留数据、架构和依赖；本轮完成公开发布，真实 iPhone/Safari 仍需实机验收"
   ],
   "decisions": [
     "采用原生 HTML/CSS/JavaScript 以降低部署复杂度",
@@ -80,7 +80,7 @@
     "v0.6 已生成 31 张截图并复核代表性布局，真实 iPhone/Safari 尚未实机验证；未运行远程 CI，未提交、推送或部署",
     "v0.7 TypeScript、11 个测试文件共 76 项、生产构建及 git diff --check 通过",
     "v0.7 本地 Chromium 20 组浏览器流程通过；最终标签错误焦点和设置标题图标收尾后，新增 6 组再次通过",
-    "v0.7 41 张截图覆盖既有多端回归，并复核 1440 宽屏、1024 紧凑侧栏、768 大字号及手机深色导航与整理界面；未验证真实 iPhone/Safari、未运行远程 CI、未发布"
+    "v0.7 41 张截图覆盖既有多端回归，并复核 1440 宽屏、1024 紧凑侧栏、768 大字号及手机深色导航与整理界面；GitHub Quality checks run 33365237825 与 Pages deploy run 33365238052 通过；真实 iPhone/Safari 仍未实机验证"
   ],
   "modules": [
     {"id": "M01", "status": "completed"},
