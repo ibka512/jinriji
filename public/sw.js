@@ -1,6 +1,11 @@
-const CACHE_NAME = "jinriji-v0.7.0";
+const CACHE_NAME = "jinriji-v0.7.1";
 const BUILD_ASSETS = [];
-const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./fonts/noto-serif-sc/noto-serif-sc.css", ...BUILD_ASSETS];
+const APP_SHELL = [
+  "./", "./index.html", "./manifest.webmanifest", "./favicon.ico",
+  "./icons/favicon-16.png", "./icons/favicon-32.png", "./icons/favicon-48.png",
+  "./icons/apple-touch-icon.png", "./icons/app-192.png", "./icons/app-512.png",
+  "./fonts/noto-serif-sc/noto-serif-sc.css", ...BUILD_ASSETS,
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));

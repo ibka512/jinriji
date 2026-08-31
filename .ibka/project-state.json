@@ -6,9 +6,9 @@
   "status": "completed",
   "current_module": "M16",
   "created_at": "2026-08-30T09:51:40.317602+00:00",
-  "updated_at": "2026-08-31T14:38:00+08:00",
-  "local_version": "0.7.0",
-  "release_status": "v0.7 已提交并推送 main，GitHub Quality checks 与 Pages 部署通过；线上地址 https://ibka512.github.io/jinriji/",
+  "updated_at": "2026-08-31T18:53:00+08:00",
+  "local_version": "0.7.1",
+  "release_status": "v0.7.1 图标与仓库文档发布更新；公开站点 https://ibka512.github.io/jinriji/；各提交的部署与质量结果以 GitHub Actions 为准",
   "constraints": [
     "公开 GitHub 仓库并使用 GitHub Pages 托管",
     "手机竖屏、平板与 Web 横屏自适应",
@@ -40,7 +40,8 @@
     "v0.7 用户确认重复待办按原计划日期推进，完成后创建一次未来安排，跳过遗漏日期；月末保留原日号",
     "v0.7 移除侧栏品牌印章，侧栏与 Tab Bar 采用共享线框／实心图标，不改变导航标签和路由",
     "v0.7 置顶、标签与重复规则使用可选条目字段，不迁移数据库；完整备份为 v4，继续读取 v1/v2/v3",
-    "v0.7 批量操作与重复完成使用事务；下一次已被修改时拒绝撤销之前的完成，保护后续工作"
+    "v0.7 批量操作与重复完成使用事务；下一次已被修改时拒绝撤销之前的完成，保护后续工作",
+    "v0.7.1 采用用户提供的朱红圆相软件图标，保留原图并适配构图；提供 favicon、Apple Touch Icon 与 PWA 尺寸，不改变纯文字侧栏或用户数据"
   ],
   "outputs": [
     "design-system.md",

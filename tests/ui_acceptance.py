@@ -256,7 +256,9 @@ def test_offline(browser):
     context, page, errors = context_page(browser)
     compose(page, "离线仍能编辑")
     page.wait_for_function("() => navigator.serviceWorker.controller")
-    cached = page.evaluate("async () => (await (await caches.open('jinriji-v0.7.0')).keys()).map(request => request.url)")
+    cache_names = page.evaluate("async () => (await caches.keys()).filter(name => name.startsWith('jinriji-'))")
+    assert len(cache_names) == 1, "Expected one active application cache"
+    cached = page.evaluate("async name => (await (await caches.open(name)).keys()).map(request => request.url)", cache_names[0])
     assert any('/assets/' in url and url.endswith('.js') for url in cached)
     assert any('/assets/' in url and url.endswith('.css') for url in cached)
     # Cached production assets, not the live developer HMR connection.
