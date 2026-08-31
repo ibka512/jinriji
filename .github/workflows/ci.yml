@@ -46,11 +46,13 @@ jobs:
           python3 tests/ui_acceptance.py
           python3 tests/timetable_acceptance.py
           python3 tests/organization_acceptance.py
+          python3 tests/writing_acceptance.py
+          python3 tests/library_acceptance.py
       - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: browser-evidence
-          path: test-results/screenshots-v0.7
+          path: test-results/screenshots-v0.9
           if-no-files-found: ignore
           retention-days: 7

@@ -1,16 +1,21 @@
 {
   "name": "jinriji",
-  "version": "0.7.1",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run check && vite build && node scripts/precache.mjs",
+    "build": "npm run check && vite build && node scripts/licenses.mjs && node scripts/precache.mjs",
     "check": "tsc --noEmit",
     "test": "vitest run",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
+    "@tiptap/core": "3.30.5",
+    "@tiptap/extension-highlight": "3.30.5",
+    "@tiptap/extension-list": "3.30.5",
+    "@tiptap/pm": "3.30.5",
+    "@tiptap/starter-kit": "3.30.5",
     "dexie": "4.4.5"
   },
   "devDependencies": {

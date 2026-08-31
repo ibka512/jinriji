@@ -1,14 +1,16 @@
 """v0.7 organization, navigation and repeat tasks. Local build, isolated user data."""
 import json
 from playwright.sync_api import expect, sync_playwright
-from ui_acceptance import BASE_URL, OUTPUT, context_page, ready, nav, compose, save, upload, assert_width
+from ui_acceptance import BASE_URL, OUTPUT, context_page, ready, nav, compose, save, upload, assert_width, begin_compose
 from timetable_acceptance import export_data, settle
 
 
 def new_tagged(page, title, tags, repeat="", date=""):
-    page.keyboard.press("Control+k")
+    if not repeat:
+        nav(page, "today")
+    begin_compose(page, "task" if repeat else "note")
     page.locator("#entry-title").fill(title)
-    page.locator("#quick-entry").fill("保留原文与分类")
+    page.locator("#quick-entry:visible, .tiptap:visible").fill("保留原文与分类")
     page.locator("#entry-organization summary").click()
     page.locator("#entry-tags").fill(tags)
     if repeat:
@@ -97,13 +99,13 @@ def test_repeating_tasks(browser):
     page.locator("#user-task-list [data-entry-check]").check()
     expect(page.locator("#user-task-list [data-entry-check]")).to_have_count(2)
     result = export_data(page)
-    assert result["version"] == 4
+    assert result["version"] == 6
     open_item = next(item for item in result["items"] if item["status"] == "open")
     assert open_item["dateOnly"] == "2026-09-30" and open_item["tags"] == ["习惯"]
     nav(page, "plan"); page.get_by_role("tab", name="待办", exact=True).click()
     page.locator("[data-task-group='later'] .task-open").click()
     page.get_by_role("button", name="编辑", exact=True).click()
-    page.locator("#quick-entry").fill("下一次已经编辑")
+    page.locator("#quick-entry:visible, .tiptap:visible").fill("下一次已经编辑")
     save(page)
     nav(page, "plan"); page.get_by_role("tab", name="待办", exact=True).click()
     page.locator("[data-completed-group] summary").click()
@@ -120,8 +122,8 @@ def test_repeating_tasks(browser):
 
 def test_metadata_drafts_and_backup(browser):
     context, page, errors = context_page(browser, 390, 844)
-    page.keyboard.press("Control+k")
-    page.locator("#quick-entry").fill("草稿保留标签及周期")
+    begin_compose(page, "task")
+    page.locator("#quick-entry:visible, .tiptap:visible").fill("草稿保留标签及周期")
     page.locator("#entry-organization summary").click(); page.locator("#entry-tags").fill("字" * 21)
     page.locator("#save-entry").click()
     expect(page.locator("#entry-error")).to_contain_text("20")
@@ -154,7 +156,7 @@ def test_bulk_conflict(browser):
     nav(page, "notes"); page.locator("#organize-toggle").click(); page.locator("#select-visible").click()
     other = context.new_page(); other.goto(BASE_URL); other.wait_for_load_state("networkidle"); ready(other)
     nav(other, "notes"); other.locator("#notes-list .record-open").click()
-    other.get_by_role("button", name="编辑", exact=True).click(); other.locator("#quick-entry").fill("另一个标签页的修改"); save(other)
+    other.get_by_role("button", name="编辑", exact=True).click(); other.locator("#quick-entry:visible, .tiptap:visible").fill("另一个标签页的修改"); save(other)
     page.bring_to_front()
     page.locator("[data-bulk-action='pin']").click()
     expect(page.locator("#toast-message")).to_contain_text("本次整理未保存")
@@ -173,9 +175,11 @@ def test_shortcuts_and_offline(browser):
     expect(page.get_by_role("searchbox")).to_have_value("n/?")
     expect(page.locator("#compose-layer")).not_to_be_visible()
     nav(page, "today"); page.keyboard.press("n")
-    page.locator("#quick-entry").fill("快捷键记录")
+    page.locator("#quick-entry:visible, .tiptap:visible").fill("快捷键记录")
     page.keyboard.press("Control+Enter"); expect(page.locator("#compose-layer")).not_to_be_visible()
+    expect(page.locator("#note-editor-page")).not_to_be_visible()
     page.wait_for_function("() => !history.state?.jinrijiModal")
+    page.wait_for_function("() => !location.hash.startsWith('#notes/new/') && !location.hash.endsWith('/edit')")
     page.keyboard.press("Alt+3"); expect(page.locator("#view-plan")).to_be_visible()
     page.keyboard.press("?"); expect(page.locator("#keyboard-shortcuts")).to_have_attribute("open", "")
     page.wait_for_function("() => Boolean(navigator.serviceWorker.controller)")

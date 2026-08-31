@@ -81,7 +81,7 @@ it("bulk deletion is reversible through recently deleted", async () => {
 it("round trips v4 metadata and restores it after an older v3 import", async () => {
   const { app, item } = await setup(); await app.updateItem(item.id, { status: "completed" });
   const all = await app.allRecords(); const backup = createFullBackup(all.items, [], "sage", all);
-  expect(backup.version).toBe(4); expect(parseBackup(JSON.stringify(backup))).toEqual(backup);
+  expect(backup.version).toBe(6); expect(parseBackup(JSON.stringify(backup))).toEqual(backup);
   const old = { ...backup, version: 3, items: [] };
   await app.importBackup(parseBackup(JSON.stringify(old))); expect((await app.allRecords()).items).toHaveLength(0);
   await app.restoreRecovery(); expect((await app.allRecords()).items.map(value => value.repeat)).toEqual(all.items.map(value => value.repeat));

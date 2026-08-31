@@ -1,10 +1,14 @@
-import type { BackupPayload, Course, Item, TimetableData } from "../domain/models";
+import type { BackupPayload, Course, Item, TimetableData, LibraryData } from "../domain/models";
 import type { JinrijiDatabase } from "./database";
 import { nextRepeatSchedule, normalizeTags, validateOrganization } from "../domain/organization";
+import { documentText, validateDocument, textDocument } from "../domain/note-document";
 
 export interface CreateItemInput {
   title: string;
   body?: string;
+  document?: Item["document"];
+  notebookId?: string;
+  sourceNoteId?: string;
   kind: Item["kind"];
   dueAt?: string;
   startAt?: string;
@@ -25,7 +29,7 @@ export interface CreateCourseInput {
   instructor?: string;
 }
 
-export type ItemChanges = Partial<Pick<Item, "title" | "body" | "kind" | "status" | "dueAt" | "startAt" | "allDay" | "dateOnly" | "deletedAt" | "courseId" | "pinned" | "tags" | "repeat">>;
+export type ItemChanges = Partial<Pick<Item, "title" | "body" | "document" | "notebookId" | "sourceNoteId" | "kind" | "status" | "dueAt" | "startAt" | "allDay" | "dateOnly" | "deletedAt" | "courseId" | "pinned" | "tags" | "repeat">>;
 export type BulkAction = "pin" | "unpin" | "tag" | "complete" | "delete";
 export type CourseChanges = Partial<Pick<Course, "name" | "firstMeetingAt" | "allDay" | "dateOnly" | "deletedAt" | "location" | "instructor">>;
 export interface RecoveryPoint { savedAt: string; payload: BackupPayload }
@@ -34,10 +38,11 @@ export const RECOVERY_KEY = "recovery:v0.5";
 export class AppRepository {
   constructor(private readonly database: JinrijiDatabase) {}
 
-  async allRecords(): Promise<{ items: Item[]; courses: Course[] } & TimetableData> {
-    return this.database.transaction("r", [this.database.items, this.database.courses, this.database.terms, this.database.recurrenceRules, this.database.occurrenceExceptions], async () => ({
+  async allRecords(): Promise<{ items: Item[]; courses: Course[] } & TimetableData & LibraryData> {
+    return this.database.transaction("r", [this.database.items, this.database.courses, this.database.terms, this.database.recurrenceRules, this.database.occurrenceExceptions, this.database.notebooks, this.database.assets], async () => ({
       items: await this.database.items.toArray(), courses: await this.database.courses.toArray(),
       terms: await this.database.terms.toArray(), recurrenceRules: await this.database.recurrenceRules.toArray(), occurrenceExceptions: await this.database.occurrenceExceptions.toArray(),
+      notebooks: await this.database.notebooks.toArray(), assets: await this.database.assets.toArray(),
     }));
   }
 
@@ -52,12 +57,16 @@ export class AppRepository {
   }
 
   async createItem(input: CreateItemInput, id: string = crypto.randomUUID()): Promise<Item> {
+    if (input.document) validateDocument(input.document);
     const now = new Date().toISOString();
     const item: Item = {
       id,
       kind: input.kind,
       title: input.title,
-      body: input.body ?? input.title,
+      body: input.document ? documentText(input.document) : input.body ?? input.title,
+      document: input.document,
+      notebookId: input.notebookId,
+      sourceNoteId: input.sourceNoteId,
       status: "open",
       dueAt: input.dueAt,
       startAt: input.startAt,
@@ -106,6 +115,9 @@ export class AppRepository {
       const completedAt = changes.status === "completed" && current.status !== "completed" ? now
         : changes.status === "open" ? undefined : current.completedAt;
       const updated: Item = { ...current, ...changes, completedAt, updatedAt: now, revision: current.revision + 1 };
+      // Plain-text editing of a converted task must not leave a stale rich projection.
+      if (changes.body !== undefined && changes.document === undefined && current.document && changes.body !== current.body) updated.document = textDocument(changes.body);
+      if (updated.document) { validateDocument(updated.document); updated.body = documentText(updated.document); }
       if (updated.kind !== "task") updated.repeat = undefined;
       if (changes.tags) updated.tags = normalizeTags(changes.tags);
       validateOrganization(updated);
@@ -180,13 +192,13 @@ export class AppRepository {
 
   /** Snapshot, replacement and imported settings commit together or not at all. */
   async importBackup(payload: BackupPayload): Promise<void> {
-    await this.database.transaction("rw", [this.database.items, this.database.courses, this.database.settings, this.database.terms, this.database.recurrenceRules, this.database.occurrenceExceptions], async () => {
+    await this.database.transaction("rw", [this.database.items, this.database.courses, this.database.settings, this.database.terms, this.database.recurrenceRules, this.database.occurrenceExceptions, this.database.notebooks, this.database.assets], async () => {
       await this.replaceWithRecovery(payload);
     });
   }
 
   async restoreRecovery(): Promise<boolean> {
-    return this.database.transaction("rw", [this.database.items, this.database.courses, this.database.settings, this.database.terms, this.database.recurrenceRules, this.database.occurrenceExceptions], async () => {
+    return this.database.transaction("rw", [this.database.items, this.database.courses, this.database.settings, this.database.terms, this.database.recurrenceRules, this.database.occurrenceExceptions, this.database.notebooks, this.database.assets], async () => {
       const point = await this.database.settings.get(RECOVERY_KEY);
       if (!point) return false;
       await this.replaceWithRecovery((point.value as RecoveryPoint).payload);
@@ -199,11 +211,23 @@ export class AppRepository {
     const theme = await this.database.settings.get("theme");
     const recovery: RecoveryPoint = {
       savedAt: now,
-      payload: { version: 4, exportedAt: now, theme: typeof theme?.value === "string" ? theme.value : "sage", glass: true,
+      payload: { version: 6, exportedAt: now, theme: typeof theme?.value === "string" ? theme.value : "sage", glass: true,
+        notebooks: await this.database.notebooks.toArray(), assets: await this.database.assets.toArray(),
         items: await this.database.items.toArray(), courses: await this.database.courses.toArray(),
         terms: await this.database.terms.toArray(), recurrenceRules: await this.database.recurrenceRules.toArray(), occurrenceExceptions: await this.database.occurrenceExceptions.toArray() },
     };
     await this.database.settings.put({ key: RECOVERY_KEY, value: recovery, updatedAt: now });
+    await this.database.notebooks.clear();
+    if (payload.version === 6) {
+      const previousBooks = new Map(recovery.payload.version === 6 ? recovery.payload.notebooks.map(book => [book.id, book.revision]) : []);
+      await this.database.notebooks.bulkPut(payload.notebooks.map(book => ({ ...book, revision: Math.max(book.revision, previousBooks.get(book.id) || 0) + 1 })));
+      // Retain unreferenced assets for local drafts/history; never overwrite a different image.
+      for (const asset of payload.assets) {
+        const existing = await this.database.assets.get(asset.id);
+        if (existing && existing.dataUrl !== asset.dataUrl) throw new Error("图片 ID 冲突，未导入；原数据不受影响");
+        await this.database.assets.put(asset);
+      }
+    }
     await this.database.items.clear();
     await this.database.courses.clear();
     // An older backup intentionally replaces the full snapshot, not a partial graph.

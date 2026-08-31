@@ -4,11 +4,11 @@
   "goal": "实现并公开部署融合液态玻璃、莫奈动态配色与现代和风氛围的响应式便签、待办和课程表 Web 应用",
   "mode": "PROJECT",
   "status": "completed",
-  "current_module": "M16",
+  "current_module": "M22",
   "created_at": "2026-08-30T09:51:40.317602+00:00",
-  "updated_at": "2026-08-31T18:53:00+08:00",
-  "local_version": "0.7.1",
-  "release_status": "v0.7.1 图标与仓库文档发布更新；公开站点 https://ibka512.github.io/jinriji/；各提交的部署与质量结果以 GitHub Actions 为准",
+  "updated_at": "2026-08-31T22:53:00+08:00",
+  "local_version": "0.9.0",
+  "release_status": "v0.9 页面式笔记与整理已完成：101 项单元测试、32 组浏览器流程、52 张截图。未提交、推送或部署。线上仍为 v0.7.1。",
   "constraints": [
     "公开 GitHub 仓库并使用 GitHub Pages 托管",
     "手机竖屏、平板与 Web 横屏自适应",
@@ -20,6 +20,12 @@
     "v0.7 保留数据、架构和依赖；本轮完成公开发布，真实 iPhone/Safari 仍需实机验收"
   ],
   "decisions": [
+    "v0.9 用户批准页面式写作与笔记整理合并实现；新笔记直接书写，旧笔记先阅读，紧凑列表与正文随可用宽度适配，任务/课程继续使用短表单",
+    "v0.9 不新增生产依赖；单层笔记本、内置模板、笔记链接与来源待办、独立本地图片及简单表格，沿用现有 Tiptap/ProseMirror",
+    "v0.9 数据库 v3 仅增加 notebooks/assets，v6 备份含图片及笔记本，兼容 v1-v5；删除笔记本不删除正文，导入保留旧草稿/历史所需图片",
+    "v0.8 用户批准 Tiptap 开源方案：可选结构化 document 为正文真源，body 为搜索投影；旧文本按字面编辑，v5 备份读取 v1-v4",
+    "v0.8 数据库 v2 只新增草稿与历史表，事务迁移旧草稿并保留 localStorage 副本；笔记自动保存、冲突不覆盖、失败保留恢复草稿",
+    "v0.8 每篇最多 20 个历史，全站最多 100 个；提供安全恢复及 TXT/基础 Markdown 导出；本轮不引入账户、图片、云同步或 AI",
     "采用原生 HTML/CSS/JavaScript 以降低部署复杂度",
     "液态玻璃仅用于导航和操作层，正文使用纸张表面",
     "使用语义色 token 承接莫奈动态主题",
@@ -44,6 +50,10 @@
     "v0.7.1 采用用户提供的朱红圆相软件图标，保留原图并适配构图；提供 favicon、Apple Touch Icon 与 PWA 尺寸，不改变纯文字侧栏或用户数据"
   ],
   "outputs": [
+    "v0.9 页面式笔记、紧凑列表、单层笔记本、内置模板、笔记链接与选段来源待办",
+    "v0.9 本地图片、简单表格、v6 备份及旧版兼容；docs/v0.9-verification.md",
+    "v0.8 轻富文本、自动保存与恢复、历史、查找替换、统计、专注排版及 TXT/Markdown 导出",
+    "v0.8 v5 完整备份、兼容旧记录、IndexedDB 草稿事务迁移及生产依赖许可汇编",
     "design-system.md",
     "响应式交互 MVP",
     "可安装离线 Web App",
@@ -62,6 +72,12 @@
     "v0.7 完整 v4 备份与旧格式兼容、76 个单元测试、20 组浏览器流程及 41 张截图"
   ],
   "verifications": [
+    "v0.9 类型检查、101 项单元测试、生产构建及 git diff --check 通过，生产依赖审计 0 漏洞",
+    "v0.9 最终生产构建 Chromium 32 组流程通过（核心9、课程5、整理6、写作6、笔记工作区6）；52张截图，图片离线刷新和备份往返通过",
+    "v0.9 手机、平板、宽屏、深色、减少动态及200%字号已回归；真实手机输入法/Safari未实机验证；JS约640kB/gzip203kB保留体积提示；未提交、推送或部署",
+    "v0.8 类型检查、89 项单元测试、生产构建、git diff --check 通过；npm audit --omit=dev 为 0 漏洞",
+    "v0.8 最终构建 Chromium 26 组流程通过（核心 9、课程 5、整理 6、写作 6），47 张截图；320/390/768/1440、667 横屏、深色与 200% 字号；输入组合事件模拟、真实 IDB 锁下连续编辑、冲突、失败恢复及 1万/5万/20万字符验证通过",
+    "v0.8 真实手机输入法和 iPhone/Safari 未实机验证；JS 单块约 590kB/gzip187kB 有体积提示；开发预览 http://127.0.0.1:5173/；未提交、推送或部署",
     "Chromium 桌面 1440px、平板 768px、手机 375/390px 关键流程通过",
     "手机横屏、深色模式、125% 字体与减少动态模式通过",
     "GitHub Pages HTTPS 部署通过",
@@ -99,6 +115,12 @@
     {"id": "M13", "status": "completed"},
     {"id": "M14", "status": "completed"},
     {"id": "M15", "status": "completed"},
-    {"id": "M16", "status": "completed"}
+    {"id": "M16", "status": "completed"},
+    {"id": "M17", "status": "completed"},
+    {"id": "M18", "status": "completed"},
+    {"id": "M19", "status": "completed"},
+    {"id": "M20", "status": "completed"},
+    {"id": "M21", "status": "completed"},
+    {"id": "M22", "status": "completed"}
   ]
 }

@@ -160,6 +160,42 @@
       "expected_outputs": ["快捷键说明", "离线状态与缓存提示", "单元测试、浏览器回归及多端截图"],
       "verification": "76 个单元测试、20 组浏览器流程、类型检查与构建通过；41 张截图及代表性布局已复核，不提交、推送或部署；iPhone/Safari 尚待真机验证",
       "status": "completed"
+    },
+    {
+      "id": "M17", "name": "v0.8 安静写作", "owner": "web-design-engineer",
+      "objective": "接入获批的 Tiptap 与持久化写作体验，保留现有视觉和旧数据",
+      "expected_outputs": ["轻富文本与格式工具", "自动保存、独立恢复草稿和版本冲突保护", "有限历史与恢复", "查找替换、统计、专注排版与文本导出", "v5 备份和旧格式兼容"],
+      "verification": "89 项单元测试、类型检查及构建通过；写作六组流程通过",
+      "status": "completed"
+    },
+    {
+      "id": "M18", "name": "v0.8 回归与交付", "owner": "webapp-testing", "depends_on": ["M17"],
+      "objective": "验证写作边界和既有操作，更新使用说明与迁移回退文档",
+      "expected_outputs": ["26 组浏览器流程", "多端写作截图", "README、写作安全与版本说明", "本地预览"],
+      "verification": "最终构建 26 组 Chromium 流程通过，47 张截图；类型、89 项单元测试、构建、diff 检查通过，生产依赖审计 0 漏洞；不提交、推送或部署；真实手机输入法与 Safari 待真机验证",
+      "status": "completed"
+    },
+    {
+      "id": "M19", "name": "v0.9 笔记整理与数据", "owner": "web-design-engineer", "depends_on": ["M18"],
+      "objective": "单层笔记本、内置模板、跨篇链接、来源待办及兼容的数据扩展",
+      "expected_outputs": ["分类事务", "模板与链接", "数据库 v3 与完整 v6 备份"], "status": "completed"
+    },
+    {
+      "id": "M20", "name": "v0.9 页面式写作", "owner": "web-design-engineer", "depends_on": ["M19"],
+      "objective": "移除笔记编辑模态窗口，提供紧凑列表、原位书写和保存前导航保护",
+      "expected_outputs": ["宽屏三栏与小屏页面", "折叠工具与笔记信息", "稳定焦点和导航"], "status": "completed"
+    },
+    {
+      "id": "M21", "name": "v0.9 图片与简单表格", "owner": "web-design-engineer", "depends_on": ["M19", "M20"],
+      "objective": "本地有界压缩图片及基础表格，保持旧数据和备份安全",
+      "expected_outputs": ["图片上传与离线呈现", "基础行列编辑", "无新增依赖"], "status": "completed"
+    },
+    {
+      "id": "M22", "name": "v0.9 回归与文档", "owner": "webapp-testing", "depends_on": ["M19", "M20", "M21"],
+      "objective": "验证页面式写作、分类、媒体及原有功能，交付本地预览",
+      "expected_outputs": ["单元测试与生产构建", "多端浏览器回归及截图", "使用与数据安全文档"],
+      "verification": "101 项单元测试、最终构建32组Chromium流程、52张截图、类型检查/构建/diff通过；生产依赖0漏洞；无新增依赖；未提交推送部署，真实手机输入法/Safari尚待实机验证",
+      "status": "completed"
     }
   ]
 }

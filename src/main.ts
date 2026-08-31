@@ -2,6 +2,11 @@ import "../styles.css";
 import "./features/entries/experience.css";
 import "./features/courses/courses.css";
 import "./features/entries/organization.css";
+import "./features/entries/writing.css";
+import "./features/entries/library.css";
+import { IndexedDraftStore } from "./data/indexed-drafts";
+import { WritingRepository } from "./data/writing-repository";
+import { LibraryRepository } from "./data/library-repository";
 import { initializeOfflineStatus } from "./platform/offline-status";
 import { TimetableRepository } from "./data/timetable-repository";
 import { db } from "./data/database";
@@ -15,6 +20,9 @@ import { isThemeName } from "./ui/theme";
 async function bootstrap(): Promise<void> {
   const migration = await migrateLocalStorage(db, localStorage);
   const repository = new AppRepository(db);
+  const drafts = new IndexedDraftStore(db);
+  try { await drafts.migrate(localStorage); }
+  catch { showToast("旧草稿迁移未完成，原数据仍保留，请先备份浏览器数据。"); }
   const settings = new SettingsRepository(db);
   const [records, storedTheme] = await Promise.all([
     repository.allRecords(),
@@ -29,7 +37,8 @@ async function bootstrap(): Promise<void> {
     items: records.items,
     courses: records.courses,
     timetable: records,
-  }, new TimetableRepository(db));
+    library: records,
+  }, new TimetableRepository(db), drafts, new WritingRepository(db), new LibraryRepository(db));
   controller.initialize();
   initializeOfflineStatus();
   document.body.dataset.appReady = "true";

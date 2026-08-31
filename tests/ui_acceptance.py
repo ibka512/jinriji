@@ -1,13 +1,14 @@
 """v0.5 acceptance. Every scenario uses an isolated browser context, never user storage."""
 import json
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 from playwright.sync_api import expect, sync_playwright
 
 BASE_URL = os.getenv("JINRIJI_BASE_URL", "http://127.0.0.1:4173")
-OUTPUT = Path(os.getenv("JINRIJI_TEST_OUTPUT", "test-results/screenshots-v0.7")).resolve()
+OUTPUT = Path(os.getenv("JINRIJI_TEST_OUTPUT", "test-results/screenshots-v0.9")).resolve()
 OUTPUT.mkdir(parents=True, exist_ok=True)
 FIXED = datetime(2026, 8, 31, 4, 0, tzinfo=timezone.utc)
 assert urlparse(BASE_URL).hostname in ("localhost", "127.0.0.1", "::1"), "Run this suite against a local build only"
@@ -35,13 +36,27 @@ def nav(page, name):
     expect(page.locator(f"[data-view-panel='{name}']")).to_be_visible()
 
 
+def begin_compose(page, kind="note"):
+    if kind != "note":
+        nav(page, "plan")
+        tab = page.get_by_role("tab", name="课程表" if kind == "course" else "待办" if kind == "task" else "本周", exact=True)
+        tab.click(); expect(tab).to_have_attribute("aria-selected", "true")
+    if kind == "note":
+        page.keyboard.press("Control+k")
+    else:
+        page.locator("#view-plan .page-header [data-open-compose]:visible, .mobile-quick-add:visible").click()
+    expect(page.locator("#note-editor-page" if kind == "note" else "#compose-layer")).to_be_visible()
+    if kind != "note":
+        page.locator(f"[data-entry-type='{kind}']").click()
+
+
 def compose(page, text, kind="note", title="", date="", time=""):
-    page.keyboard.press("Control+k")
-    expect(page.locator("#compose-layer")).to_be_visible()
-    page.locator(f"[data-entry-type='{kind}']").click()
+    if kind == "note":
+        nav(page, "today")
+    begin_compose(page, kind)
     page.locator("#entry-title").fill(title)
     if kind != "course":
-        page.locator("#quick-entry").fill(text)
+        page.locator("#quick-entry:visible, .tiptap:visible").fill(text)
     if kind != "note":
         page.locator("#entry-date").fill(date)
         page.locator("#entry-time").fill(time)
@@ -51,7 +66,9 @@ def compose(page, text, kind="note", title="", date="", time=""):
 def save(page):
     page.locator("#save-entry").click()
     expect(page.locator("#compose-layer")).not_to_be_visible()
+    expect(page.locator("#note-editor-page")).not_to_be_visible()
     page.wait_for_function("() => !history.state?.jinrijiModal")
+    page.wait_for_function("() => !location.hash.endsWith('/edit') && !location.hash.startsWith('#notes/new/')")
 
 
 def assert_width(page):
@@ -71,10 +88,10 @@ def test_records(browser):
     expect(page.locator("#notes-list .note-card")).to_have_count(1)
     page.locator("#notes-list .record-open").click()
     expect(page.locator("#detail-title")).to_have_text("可编辑的便签")
-    expect(page.locator(".detail-body")).to_have_text("正文第一行\n正文第二行")
+    expect(page.locator(".detail-body")).to_have_text("正文第一行\n正文第二行", use_inner_text=True)
     item_url = page.url
     page.get_by_role("button", name="编辑", exact=True).click()
-    page.locator("#quick-entry").fill("改好的正文\n保留换行")
+    page.locator("#quick-entry:visible, .tiptap:visible").fill("改好的正文\n保留换行")
     page.locator("#entry-title").fill("更新后的便签")
     save(page)
     expect(page.locator("#detail-title")).to_have_text("更新后的便签")
@@ -104,17 +121,17 @@ def test_records(browser):
 
 def test_drafts(browser):
     context, page, errors = context_page(browser, 390, 844)
-    page.locator(".mobile-quick-add").click()
-    page.locator("#quick-entry").fill("手机端未写完的草稿")
+    begin_compose(page, "task")
+    page.locator("#quick-entry:visible, .tiptap:visible").fill("手机端未写完的草稿")
     expect(page.locator("#draft-status")).to_have_text("草稿已暂存")
     page.get_by_role("button", name="关闭编辑器").click()
     expect(page.locator("#draft-banner")).to_be_visible()
     page.reload(); ready(page)
     page.locator("#resume-draft").click()
-    expect(page.locator("#quick-entry")).to_have_value("手机端未写完的草稿")
+    expect(page.locator("#quick-entry:visible, .tiptap:visible")).to_have_value("手机端未写完的草稿")
     page.reload(); ready(page)
     page.locator("#resume-draft").click()
-    expect(page.locator("#quick-entry")).to_have_value("手机端未写完的草稿")
+    expect(page.locator("#quick-entry:visible, .tiptap:visible")).to_have_value("手机端未写完的草稿")
     page.go_back()
     expect(page.locator("#compose-layer")).not_to_be_visible()
     page.locator("#resume-draft").click()
@@ -124,10 +141,10 @@ def test_drafts(browser):
     expect(page.locator("#notes-list .note-card")).to_have_count(1)
     page.locator("#notes-list .record-open").click()
     page.get_by_role("button", name="编辑", exact=True).click()
-    page.locator("#quick-entry").fill("不想保存的修改")
+    page.locator("#quick-entry:visible, .tiptap:visible").fill("不想保存的修改")
     page.locator("#discard-draft").click()
     page.locator("#confirm-cancel").click()
-    expect(page.locator("#quick-entry")).to_have_value("不想保存的修改")
+    expect(page.locator("#quick-entry:visible, .tiptap:visible")).to_have_value("不想保存的修改")
     page.locator("#discard-draft").click()
     page.locator("#confirm-accept").click()
     expect(page.locator("#compose-layer")).not_to_be_visible()
@@ -207,7 +224,7 @@ def test_backup(browser):
         page.locator("#export-data").click()
     download = download_info.value
     payload = json.loads(Path(download.path()).read_text())
-    assert payload["version"] == 4 and len(payload["items"]) == 1 and payload["glass"] is True
+    assert payload["version"] == 6 and len(payload["items"]) == 1 and payload["glass"] is True
     expect(page.locator("#last-export")).to_contain_text("上次导出")
     assert not errors, errors
     context.close()
@@ -239,7 +256,7 @@ def test_layouts(browser):
             assert page.locator("#notes-list").bounding_box()["x"] < page.locator("#entry-detail").bounding_box()["x"]
         page.screenshot(path=str(OUTPUT / f"detail-{width}-{mode}-{scale}.png"), full_page=True)
         page.get_by_role("button", name="编辑", exact=True).click()
-        expect(page.locator("#quick-entry")).to_be_focused()
+        expect(page.locator("#quick-entry:visible, .tiptap:visible")).to_be_focused()
         assert_width(page)
         save_box = page.locator("#save-entry").bounding_box()
         assert save_box and save_box["y"] >= 0 and save_box["y"] + save_box["height"] <= height + 1
@@ -266,7 +283,7 @@ def test_offline(browser):
     page.reload(); ready(page)
     nav(page, "notes"); page.locator("#notes-list .record-open").click()
     page.get_by_role("button", name="编辑", exact=True).click()
-    page.locator("#quick-entry").fill("离线更新成功"); save(page)
+    page.locator("#quick-entry:visible, .tiptap:visible").fill("离线更新成功"); save(page)
     expect(page.locator("#detail-title")).to_have_text("离线更新成功")
     assert not errors, errors
     context.close()
@@ -274,11 +291,11 @@ def test_offline(browser):
 
 def test_failures_and_keyboard(browser):
     context, page, errors = context_page(browser, 390, 844)
-    page.locator(".mobile-quick-add").click()
+    begin_compose(page, "task")
     page.locator("#save-entry").click()
     expect(page.locator("#entry-error")).to_contain_text("请输入")
-    expect(page.locator("#quick-entry")).to_be_focused()
-    page.locator("#quick-entry").fill("失败后仍保留输入")
+    expect(page.locator("#quick-entry:visible, .tiptap:visible")).to_be_focused()
+    page.locator("#quick-entry:visible, .tiptap:visible").fill("失败后仍保留输入")
     page.locator("[data-entry-type='task']").click()
     page.locator("#entry-time").fill("10:00")
     page.locator("#save-entry").click()
@@ -297,7 +314,7 @@ def test_failures_and_keyboard(browser):
     }""")
     page.locator("#save-entry").click()
     expect(page.locator("#entry-error")).to_contain_text("存储空间不足")
-    expect(page.locator("#quick-entry")).to_have_value("失败后仍保留输入")
+    expect(page.locator("#quick-entry:visible, .tiptap:visible")).to_have_value("失败后仍保留输入")
     expect(page.locator("#save-entry")).to_be_enabled()
     page.keyboard.press("Control+Enter")
     expect(page.locator("#compose-layer")).not_to_be_visible()
@@ -344,14 +361,26 @@ def test_scroll_and_conflict(browser):
     page.locator("#notes-list .record-open").last.click()
     detail_url = page.url
     page.get_by_role("button", name="编辑", exact=True).click()
-    page.locator("#quick-entry").fill("第一页的草稿")
+    # Keep the first window in an IME composition, so only the second window commits.
+    page.locator(".tiptap").dispatch_event("compositionstart")
+    page.locator("#quick-entry:visible, .tiptap:visible").fill("第一页的草稿")
     other = context.new_page(); other.goto(detail_url); ready(other)
+    other.bring_to_front()
     other.get_by_role("button", name="编辑", exact=True).click()
-    other.locator("#quick-entry").fill("第二页已经保存的正文"); save(other)
+    # A user selects the current text before replacing it. Playwright fill on a
+    # just-focused background contenteditable can race the browser's selection.
+    other.locator(".tiptap").click()
+    other.locator(".tiptap").press("Meta+a" if sys.platform == "darwin" else "Control+a")
+    other.keyboard.insert_text("第二页已经保存的正文")
+    expect(other.locator(".tiptap")).to_have_text("第二页已经保存的正文")
+    save(other)
+    page.bring_to_front()
+    page.locator(".tiptap").dispatch_event("compositionend")
     page.locator("#save-entry").click()
-    expect(page.locator("#entry-error")).to_contain_text("已变动")
-    expect(page.locator("#quick-entry")).to_have_value("第一页的草稿")
+    expect(page.locator("#entry-error")).to_contain_text("另一窗口")
+    expect(page.locator(".tiptap")).to_have_text("第一页的草稿")
     page.locator("#save-as-new").click(); expect(page.locator("#compose-layer")).not_to_be_visible()
+    expect(page.locator("#note-editor-page")).not_to_be_visible()
     other.reload(); ready(other)
     expect(other.locator(".detail-body")).to_have_text("第二页已经保存的正文")
     assert not errors, errors

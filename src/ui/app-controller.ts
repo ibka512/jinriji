@@ -1,9 +1,14 @@
-import type { Course, Item, TimetableData } from "../domain/models";
+import type { Course, Item, TimetableData, LibraryData } from "../domain/models";
+import type { Draft } from "../data/drafts";
+import { LibraryRepository } from "../data/library-repository";
+import { LibraryController } from "../features/entries/library-controller";
+import { cacheImages, hydrateImages } from "../features/entries/local-images";
 import { emptyTimetable } from "../domain/timetable";
 import { TimetableRepository } from "../data/timetable-repository";
 import { CourseController } from "../features/courses/controller";
 import { renderTimetable } from "../features/courses/render";
-import { DraftStore } from "../data/drafts";
+import { IndexedDraftStore } from "../data/indexed-drafts";
+import { WritingRepository } from "../data/writing-repository";
 import { AppRepository, SettingsRepository } from "../data/repositories";
 import { renderEntries, renderNotes, renderDetail, renderTimeViews, type RenderOptions, type Selection } from "../features/entries/render";
 import { EntryEditor } from "../features/entries/editor";
@@ -17,7 +22,7 @@ import { SegmentedSwitch } from "./segmented-switch";
 import { initializeNavigationIcons } from "./navigation-icons";
 import { OrganizationController } from "../features/entries/organization-controller";
 
-interface AppState { view: ViewName; theme: ThemeName; items: Item[]; courses: Course[]; timetable: TimetableData }
+interface AppState { view: ViewName; theme: ThemeName; items: Item[]; courses: Course[]; timetable: TimetableData; library: LibraryData }
 const UI_KEY = "jinriji:ui:v0.5";
 
 export class AppController {
@@ -27,28 +32,45 @@ export class AppController {
   private readonly segments: SegmentedSwitch;
   private readonly study: CourseController;
   private readonly organization: OrganizationController;
+  private readonly library: LibraryController;
+  private readonly requestedNotes = new Map<string, { draft: Draft; recovered: boolean }>();
   private readonly options: RenderOptions = { search: "", filter: "all", weekOffset: 0, completedOpen: false, timetable: emptyTimetable(), courseView: { termId: "", week: 0, day: 0 } };
   private lastPlanTab: PlanTab = "week";
   private refreshing?: Promise<void>;
   private readonly pending = new Set<string>();
 
-  constructor(private readonly repository: AppRepository, private readonly settings: SettingsRepository, private readonly state: AppState, timetableRepository: TimetableRepository) {
+  constructor(private readonly repository: AppRepository, private readonly settings: SettingsRepository, private readonly state: AppState, timetableRepository: TimetableRepository, drafts: IndexedDraftStore, writing: WritingRepository, libraryRepository: LibraryRepository) {
     this.options.timetable = state.timetable;
     this.organization = new OrganizationController(repository, () => state.items, this.options, () => this.refresh(), () => this.savePreferences());
-    this.editor = new EntryEditor(repository, new DraftStore(localStorage), async selection => {
+    this.editor = new EntryEditor(repository, drafts, async selection => {
       await this.refresh();
       showToast("已保存", () => this.openDetail(selection), "查看");
-    }, () => this.renderDraftBanner());
+    }, () => void this.renderDraftBanner(), writing, libraryRepository);
+    this.library = new LibraryController(libraryRepository, () => state.library.notebooks, this.options, () => this.refresh(), draft => this.editor.open(draft, false));
     this.backup = new BackupController(repository, settings, () => this.refresh());
     this.study = new CourseController(timetableRepository, () => ({ courses: state.courses, data: this.options.timetable, view: this.options.courseView }),
       () => this.refresh(), () => { renderTimetable(state.courses, this.options.timetable, this.options.courseView); this.savePreferences(); },
       id => this.openDetail({ entity: "course", id }));
-    this.navigation = new Navigation(state.view, route => this.applyRoute(route), () => {
+    this.navigation = new Navigation(state.view, route => this.applyRoute(route), async fromHistory => {
       if (query<HTMLDialogElement>("#confirm-dialog").open) query<HTMLButtonElement>("#confirm-cancel").click();
-      if (this.editor.isOpen) { this.editor.close(true); return !this.editor.isOpen; }
+      if (this.editor.isPage) { if (!await this.editor.leavePage()) return false; await this.refresh(); }
+      else if (this.editor.isOpen) { await this.editor.close(fromHistory); return !this.editor.isOpen; }
       if (this.study.isOpen) return this.study.dismissFromHistory();
       return !query<HTMLDialogElement>("#confirm-dialog").open;
-    });
+    }, cause => showToast(cause instanceof Error ? cause.message : "切换失败，内容仍保留"));
+    this.editor.onPageRequest = (draft, recovered) => {
+      if (!draft.entity && !draft.notebookId && this.options.notebookId && this.options.notebookId !== "unfiled") draft = { ...draft, notebookId: this.options.notebookId };
+      this.requestedNotes.set(draft.id!, { draft, recovered });
+      this.navigation.go(draft.revision === undefined ? { view: "notes", newNoteId: draft.id } : { view: "notes", selection: { entity: "item", id: draft.id! }, editing: true }, draft.revision !== undefined && this.navigation.route.selection?.id === draft.id);
+    };
+    this.editor.onPageDone = id => { void this.navigation.go(id ? { view: "notes", selection: { entity: "item", id } } : { view: "notes" }, true); };
+    this.editor.onNoteCommitted = item => {
+      const index = state.items.findIndex(record => record.id === item.id);
+      if (index < 0) state.items.unshift(item); else state.items[index] = item;
+      this.options.selection = { entity: "item", id: item.id }; this.editor.setNotes(state.items);
+      renderNotes(state.items, this.options);
+      query("#sidebar-count").textContent = `${state.items.filter(item => !item.deletedAt).length} 条记录`;
+    };
     this.segments = new SegmentedSwitch(query(".segmented"), value => this.navigation.go({ view: "plan", tab: value as PlanTab }));
   }
 
@@ -69,7 +91,8 @@ export class AppController {
     applyTheme(this.state.theme);
     this.render();
     this.editor.setCourses(this.state.courses);
-    this.editor.initialize(); this.backup.initialize(); this.study.initialize(); this.organization.initialize();
+    this.editor.setNotebooks(this.state.library.notebooks); this.editor.setNotes(this.state.items); cacheImages(this.state.library.assets);
+    this.editor.initialize(); this.backup.initialize(); this.study.initialize(); this.organization.initialize(); this.library.initialize();
     this.bindEvents(); this.navigation.initialize();
     void this.run(() => this.backup.renderStatus());
     const refreshWhenVisible = (): void => { if (!document.hidden) void this.run(() => this.refresh()); };
@@ -92,6 +115,7 @@ export class AppController {
     const next = (this.refreshing || Promise.resolve()).catch(() => undefined).then(async () => {
       const [records, theme] = await Promise.all([this.repository.allRecords(), this.settings.get("theme", "sage")]);
       this.state.items = records.items; this.state.courses = records.courses;
+      this.state.library = records; cacheImages(records.assets); this.editor.setNotebooks(records.notebooks); this.editor.setNotes(records.items); this.library.render();
       this.state.timetable = records; this.options.timetable = records; this.editor.setCourses(records.courses);
       this.state.theme = isThemeName(theme) ? theme : "sage";
       applyTheme(this.state.theme); this.render();
@@ -114,9 +138,9 @@ export class AppController {
     }
   }
 
-  private renderDraftBanner(): void {
+  private async renderDraftBanner(): Promise<void> {
     try {
-      const drafts = this.editor.drafts.list();
+      const drafts = await this.editor.drafts.list();
       query<HTMLElement>("#draft-banner").hidden = !drafts.length;
       query("#draft-banner-text").textContent = drafts.length > 1 ? `${drafts.length} 份未完成草稿` : "有未完成的草稿";
     } catch {
@@ -130,7 +154,8 @@ export class AppController {
     catch { showToast("界面偏好未能保存，记录不受影响"); }
   }
 
-  private applyRoute(route: Route): void {
+  private async applyRoute(route: Route): Promise<void> {
+    const keepTabFocus = this.state.view === "plan" && route.view === "plan" && document.activeElement?.closest(".segmented");
     this.organization.resetSelection();
     this.state.view = route.view;
     this.options.selection = route.selection;
@@ -145,8 +170,23 @@ export class AppController {
     queryAll<HTMLElement>("[data-plan-panel]").forEach(panel => panel.classList.toggle("is-active", panel.dataset.planPanel === this.lastPlanTab));
     renderNotes(this.state.items, this.options);
     renderDetail(this.state.items, this.state.courses, route.selection, this.options.timetable);
-    const heading = route.selection ? query<HTMLElement>("#detail-title") : query<HTMLElement>(`[data-view-panel="${route.view}"] h1`);
-    heading.focus({ preventScroll: true });
+    hydrateImages();
+    if (route.editing || route.newNoteId) {
+      const id = route.newNoteId || route.selection!.id;
+      const requested = this.requestedNotes.get(id); this.requestedNotes.delete(id);
+      if (requested?.draft.id === id) this.editor.open(requested.draft, requested.recovered, true);
+      else {
+        const record = this.state.items.find(item => item.id === id && !item.deletedAt && item.kind === "note");
+        if (record) await this.editor.openRecord(record, true);
+        else if (route.newNoteId) {
+          const draft = (await this.editor.drafts.list()).find(draft => draft.id === id);
+          this.editor.open(draft || { key: "new", id, type: "note", title: "", body: "", date: "", time: "", updatedAt: new Date().toISOString() }, Boolean(draft), true);
+        }
+      }
+    } else {
+      const heading = route.selection ? query<HTMLElement>("#detail-title") : query<HTMLElement>(`[data-view-panel="${route.view}"] h1`);
+      if (!keepTabFocus) heading.focus({ preventScroll: true });
+    }
     try { localStorage.setItem("jinriji:view", route.view); } catch { /* Navigation remains usable without preferences. */ }
     this.savePreferences();
   }
@@ -198,7 +238,7 @@ export class AppController {
     query(".theme-swatches").addEventListener("keydown", event => this.handleRadioKeys(event as KeyboardEvent, ".theme-dot"));
     document.addEventListener("keydown", event => {
       if (event.isComposing || event.repeat || query<HTMLDialogElement>("#confirm-dialog").open || this.study.isOpen) return;
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      if (!this.editor.isOpen && (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault(); void this.run(async () => this.editor.openNew("note"));
       }
       if (this.editor.isOpen || (event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"]'))) return;
@@ -207,14 +247,16 @@ export class AppController {
         this.navigation.go({ view, ...(view === "plan" ? { tab: this.lastPlanTab } : {}) }); return;
       }
       if (event.metaKey || event.ctrlKey || event.altKey) return;
-      if (event.key === "/") { event.preventDefault(); this.navigation.go({ view: "notes" }); search.focus(); search.select(); }
+      if (event.key === "/") { event.preventDefault(); void this.navigation.go({ view: "notes" }).then(() => { search.focus(); search.select(); }); }
       if (event.key.toLowerCase() === "n") {
         event.preventDefault(); const type = this.state.view === "plan" ? this.lastPlanTab === "courses" ? "course" : this.lastPlanTab === "tasks" ? "task" : "schedule" : "note";
         void this.run(async () => this.editor.openNew(type));
       }
       if (event.key === "?") {
-        event.preventDefault(); this.navigation.go({ view: "settings" }); query<HTMLDetailsElement>("#keyboard-shortcuts").open = true;
-        query<HTMLElement>("#keyboard-shortcuts summary").focus();
+        event.preventDefault(); void this.navigation.go({ view: "settings" }).then(() => {
+          query<HTMLDetailsElement>("#keyboard-shortcuts").open = true;
+          query<HTMLElement>("#keyboard-shortcuts summary").focus();
+        });
       }
       if (event.key === "Escape" && this.options.selecting) { this.organization.resetSelection(); renderNotes(this.state.items, this.options); query<HTMLElement>("#organize-toggle").focus(); }
     });
@@ -232,9 +274,14 @@ export class AppController {
 
   private async handleClick(event: MouseEvent): Promise<void> {
     if (!(event.target instanceof Element)) return;
-    const target = event.target.closest<HTMLElement>("button, a.brand");
+    if (event.target.closest("#entry-detail .detail-body") && !event.target.closest("a,button,input") && window.getSelection()?.isCollapsed) {
+      const item = this.state.items.find(item => item.id === this.options.selection?.id && item.kind === "note" && !item.deletedAt);
+      if (item) { await this.editor.openRecord(item); return; }
+    }
+    const target = event.target.closest<HTMLElement>("button, a.brand, a[data-note-id]");
     if (!target || target instanceof HTMLButtonElement && target.disabled) return;
     const data = target.dataset;
+    if (data.noteId) { event.preventDefault(); this.openDetail({ entity: "item", id: data.noteId }); return; }
     if (data.view || data.viewJump || target.matches("a.brand")) {
       event.preventDefault();
       const view = (data.view || data.viewJump || "today") as ViewName;
@@ -242,15 +289,15 @@ export class AppController {
     }
     if (target.hasAttribute("data-open-compose")) {
       const type = data.composeType || (this.state.view === "plan" ? this.lastPlanTab === "courses" ? "course" : this.lastPlanTab === "week" ? "schedule" : "task" : "note");
-      this.editor.openNew(type as "note" | "task" | "schedule" | "course", this.state.view === "today" && type !== "note" ? dayKey() : "");
+      await this.editor.openNew(type as "note" | "task" | "schedule" | "course", this.state.view === "today" && type !== "note" ? dayKey() : "");
     }
-    if (data.courseNote) this.editor.openNew("note", "", data.courseNote);
-    if (target.id === "resume-draft") { const draft = this.editor.drafts.list()[0]; if (draft) this.editor.open(draft); }
+    if (data.courseNote) await this.editor.openNew("note", "", data.courseNote);
+    if (target.id === "resume-draft") { const draft = (await this.editor.drafts.list())[0]; if (draft) this.editor.open(draft); }
     if (data.entryOpen) this.openDetail({ id: data.entryOpen, entity: data.entity === "course" ? "course" : "item" });
     if (target.hasAttribute("data-detail-back")) this.navigation.back();
     if (data.entryEdit) {
       const record = data.entity === "course" ? this.state.courses.find(course => course.id === data.entryEdit) : this.state.items.find(item => item.id === data.entryEdit);
-      if (record) this.editor.openRecord(record);
+      if (record) await this.editor.openRecord(record);
     }
     if (data.entryConvert) {
       await this.repository.updateItem(data.entryConvert, { kind: "task", status: "open" }); await this.refresh();

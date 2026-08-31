@@ -1,10 +1,11 @@
-const CACHE_NAME = "jinriji-v0.7.1";
+const CACHE_NAME = "jinriji-v0.9.0";
 const BUILD_ASSETS = [];
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./favicon.ico",
   "./icons/favicon-16.png", "./icons/favicon-32.png", "./icons/favicon-48.png",
   "./icons/apple-touch-icon.png", "./icons/app-192.png", "./icons/app-512.png",
   "./fonts/noto-serif-sc/noto-serif-sc.css", ...BUILD_ASSETS,
+  "./third-party-licenses.txt",
 ];
 
 self.addEventListener("install", (event) => {

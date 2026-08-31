@@ -1,10 +1,12 @@
-import type { BackupPayload, BackupPayloadV2, BackupPayloadV4, Course, Item, LegacyEntry, OccurrenceException, RecurrenceRule, Term, TimetableData } from "../domain/models";
+import type { BackupPayload, BackupPayloadV2, BackupPayloadV6, Course, Item, LegacyEntry, OccurrenceException, RecurrenceRule, Term, TimetableData, LibraryData } from "../domain/models";
+import { documentReferences, nameNotebook, validateAsset, type Notebook, type NoteAsset } from "../domain/notebooks";
+import { validateDocument, documentText } from "../domain/note-document";
 import { validateOrganization } from "../domain/organization";
 import { legacyEntryToRecord } from "./legacy-conversion";
 import { isCalendarDate } from "../domain/dates";
 import { validateException, validateExceptionShape, validateRule, validateRuleShape, validateTerm } from "../domain/timetable";
 
-export const MAX_BACKUP_BYTES = 10 * 1024 * 1024;
+export const MAX_BACKUP_BYTES = 64 * 1024 * 1024;
 
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("备份中包含无效记录");
@@ -45,8 +47,13 @@ function validateRecord(value: unknown, course = false): Item | Course {
   if (!["note", "task", "event"].includes(String(record.kind)) || !["open", "completed", "archived"].includes(String(record.status))) throw new Error("备份记录类型或状态无效");
   for (const key of ["dueAt", "startAt", "endAt", "completedAt"]) timestamp(record, key);
   textField(record, "courseId");
+  textField(record, "notebookId", false, 512); textField(record, "sourceNoteId", false, 512);
   if (!Array.isArray(record.reminderOffsets) || !record.reminderOffsets.every(offset => typeof offset === "number" && Number.isFinite(offset) && offset >= 0)) throw new Error("备份提醒设置无效");
   validateOrganization(record as unknown as Item);
+  if (record.document !== undefined) {
+    validateDocument(record.document);
+    if (record.body !== documentText(record.document)) throw new Error("备份正文与检索文本不一致");
+  }
   return record as unknown as Item;
 }
 
@@ -72,9 +79,11 @@ export function createBackup(items: Item[], courses: Course[], theme: string, gl
   };
 }
 
-export function createFullBackup(items: Item[], courses: Course[], theme: string, timetable: TimetableData): BackupPayloadV4 {
-  return { ...createBackup(items, courses, theme, true), version: 4, terms: timetable.terms,
-    recurrenceRules: timetable.recurrenceRules, occurrenceExceptions: timetable.occurrenceExceptions };
+export function createFullBackup(items: Item[], courses: Course[], theme: string, timetable: TimetableData & Partial<LibraryData>): BackupPayloadV6 {
+  const references = new Set(items.flatMap(item => [...documentReferences(item.document).assets]));
+  return { ...createBackup(items, courses, theme, true), version: 6, terms: timetable.terms,
+    recurrenceRules: timetable.recurrenceRules, occurrenceExceptions: timetable.occurrenceExceptions,
+    notebooks: timetable.notebooks || [], assets: (timetable.assets || []).filter(asset => references.has(asset.id)) };
 }
 
 function timetableRecords<T>(value: unknown, limit: number, validate: (record: Record<string, unknown>) => void): T[] {
@@ -92,17 +101,20 @@ function timetableRecords<T>(value: unknown, limit: number, validate: (record: R
 }
 
 export function parseBackup(raw: string): BackupPayload {
-  if (new TextEncoder().encode(raw).byteLength > MAX_BACKUP_BYTES) throw new Error("备份不能超过 10 MB");
+  if (new TextEncoder().encode(raw).byteLength > MAX_BACKUP_BYTES) throw new Error("备份不能超过 64 MB");
   const payload: unknown = JSON.parse(raw);
   if (!payload || typeof payload !== "object") throw new Error("备份文件不是有效对象。");
   const candidate = payload as Record<string, unknown>;
 
-  if ((candidate.version === 2 || candidate.version === 3 || candidate.version === 4) && Array.isArray(candidate.items) && Array.isArray(candidate.courses)) {
+  if ([2, 3, 4, 5, 6].includes(Number(candidate.version)) && typeof candidate.version === "number" && Array.isArray(candidate.items) && Array.isArray(candidate.courses)) {
     timestamp(candidate, "exportedAt", true);
     if (typeof candidate.theme !== "string" || typeof candidate.glass !== "boolean") throw new Error("备份设置无效");
     const base: BackupPayloadV2 = { version: 2, exportedAt: candidate.exportedAt as string, theme: candidate.theme, glass: candidate.glass,
       items: records<Item>(candidate.items), courses: records<Course>(candidate.courses, true) };
-    if (candidate.version === 2) return base;
+    if (candidate.version === 2) {
+      if (base.items.some(item => item.notebookId || documentReferences(item.document).assets.size)) throw new Error("笔记本与图片需要 v6 格式的完整备份");
+      return base;
+    }
     const terms = timetableRecords<Term>(candidate.terms, 100, record => {
       for (const key of ["name", "startDate", "endDate", "timeZone"]) textField(record, key, true, 200);
       validateTerm(record as unknown as Term);
@@ -149,7 +161,23 @@ export function parseBackup(raw: string): BackupPayload {
       }
       for (const id of path) checked.add(id);
     }
-    return { ...base, version: candidate.version as 3 | 4, terms, recurrenceRules, occurrenceExceptions };
+    if (candidate.version === 6) {
+      const notebooks = timetableRecords<Notebook>(candidate.notebooks, 1000, record => {
+        textField(record, "name", true, 40); nameNotebook(record.name as string);
+        timestamp(record, "createdAt", true); timestamp(record, "updatedAt", true); timestamp(record, "deletedAt");
+        if (!Number.isSafeInteger(record.revision) || (record.revision as number) < 1) throw new Error("笔记本版本无效");
+      });
+      const assets = timetableRecords<NoteAsset>(candidate.assets, 2000, record => validateAsset(record as unknown as NoteAsset));
+      const assetIds = new Set(assets.map(asset => asset.id));
+      const bookIds = new Set(notebooks.filter(book => !book.deletedAt).map(book => book.id));
+      for (const item of base.items) {
+        if (item.notebookId && !bookIds.has(item.notebookId)) throw new Error("备份缺少对应笔记本");
+        for (const id of documentReferences(item.document).assets) if (!assetIds.has(id)) throw new Error("备份缺少正文中的图片");
+      }
+      return { ...base, version: 6, terms, recurrenceRules, occurrenceExceptions, notebooks, assets };
+    }
+    if (base.items.some(item => item.notebookId || documentReferences(item.document).assets.size)) throw new Error("笔记本与图片需要 v6 格式的完整备份");
+    return { ...base, version: candidate.version as 3 | 4 | 5, terms, recurrenceRules, occurrenceExceptions };
   }
 
   if ((candidate.version === undefined || candidate.version === 1) && Array.isArray(candidate.entries)) {

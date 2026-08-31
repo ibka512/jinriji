@@ -74,8 +74,10 @@ def test_build_schedule(browser):
     expect(page.locator(".rule-row")).to_contain_text("1–4周 单周")
     page.locator("[data-course-note]").click()
     expect(page.locator("#entry-course")).not_to_have_value("")
-    page.locator("#quick-entry").fill("课程关联笔记\n保留正文")
+    page.locator("#quick-entry:visible, .tiptap:visible").fill("课程关联笔记\n保留正文")
     page.locator("#save-entry").click(); expect(page.locator("#compose-layer")).not_to_be_visible()
+    expect(page.locator("#note-editor-page")).not_to_be_visible()
+    page.locator(".course-link").click()
     expect(page.locator(".linked-record")).to_contain_text("课程关联笔记")
     page.locator(".linked-record").click()
     expect(page.locator(".course-link")).to_contain_text("课堂课程")
@@ -89,7 +91,7 @@ def test_build_schedule(browser):
     page.get_by_role("button", name="课程下一周", exact=True).click()
     expect(page.locator(".course-day-list")).to_contain_text("课堂课程")
     result = export_data(page)
-    assert result["version"] == 4 and len(result["terms"]) == 1 and len(result["recurrenceRules"]) == 1
+    assert result["version"] == 6 and len(result["terms"]) == 1 and len(result["recurrenceRules"]) == 1
     assert result["items"][0]["courseId"] == result["courses"][0]["id"]
     assert not errors, errors
     context.close()
@@ -150,8 +152,10 @@ def test_backup_course_safety(browser):
     assert len(export_data(page)["courses"]) == 2
     plan_courses(page)
     page.locator("#user-course-list .record-open").filter(has_text="日本美术史").click()
-    page.locator("[data-course-note]").click(); page.locator("#quick-entry").fill("删除课程后仍保留的笔记")
+    page.locator("[data-course-note]").click(); page.locator("#quick-entry:visible, .tiptap:visible").fill("删除课程后仍保留的笔记")
     page.locator("#save-entry").click(); expect(page.locator("#compose-layer")).not_to_be_visible()
+    expect(page.locator("#note-editor-page")).not_to_be_visible()
+    page.locator(".course-link").click()
     page.get_by_role("button", name="删除", exact=True).click()
     nav(page, "notes"); page.get_by_role("searchbox").fill("删除课程后")
     page.locator("#notes-list .record-open").click()

@@ -42,7 +42,11 @@ export class BackupController {
     const data = await this.repository.allRecords();
     const theme = await this.settings.get("theme", "sage");
     const payload = createFullBackup(data.items, data.courses, theme, data);
-    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+    const serialized = JSON.stringify(payload);
+    const blob = new Blob([serialized], { type: "application/json" });
+    if (blob.size > MAX_BACKUP_BYTES) throw new Error("完整备份已超过 64 MB，未生成不可恢复的备份。请先分篇导出正文并减少图片。");
+    parseBackup(serialized); // Never emit a backup our importer cannot restore.
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a"); link.href = url;
     link.download = `今日记-${new Date().toISOString().slice(0, 10)}.json`; link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
@@ -52,15 +56,16 @@ export class BackupController {
   }
 
   private async import(file: File): Promise<void> {
-    if (file.size > MAX_BACKUP_BYTES) throw new Error("备份不能超过 10 MB");
+    if (file.size > MAX_BACKUP_BYTES) throw new Error("备份不能超过 64 MB");
     const payload = parseBackup(await file.text());
     if (!isThemeName(payload.theme)) payload.theme = "sage";
     const current = await this.repository.allRecords();
     const count = payload.items.filter(item => !item.deletedAt).length;
     const courses = payload.courses.filter(course => !course.deletedAt).length;
     const deleted = payload.items.length + payload.courses.length - count - courses;
-    const scheduleInfo = payload.version !== 2 ? `另含 ${payload.terms.length} 个学期、${payload.recurrenceRules.filter(rule => !rule.deletedAt).length} 条排课规则、${payload.occurrenceExceptions.length} 次调整。`
-      : "此旧版备份不含学期和排课规则，导入会替换当前排课数据。";
+    const libraryInfo = payload.version === 6 ? `含 ${payload.notebooks.filter(book => !book.deletedAt).length} 个笔记本、${payload.assets.length} 张图片。` : "旧备份不含笔记本，当前笔记本将被替换为空。";
+    const scheduleInfo = (payload.version !== 2 ? `另含 ${payload.terms.length} 个学期、${payload.recurrenceRules.filter(rule => !rule.deletedAt).length} 条排课规则、${payload.occurrenceExceptions.length} 次调整。`
+      : "此旧版备份不含学期和排课规则，导入会替换当前排课数据。") + libraryInfo;
     const confirmed = await confirmAction("导入备份", `备份时间：${momentLabel(payload.exportedAt)}\n包含 ${count} 条记录、${courses} 门课程、${deleted} 条最近删除。\n${scheduleInfo}\n将替换当前 ${current.items.length} 条记录与 ${current.courses.length} 门课程（含最近删除、学期与排课）。导入前会保留一个完整恢复点，草稿不受影响。`, "确认导入", () => this.repository.importBackup(payload));
     if (confirmed) { await this.refresh(); showToast("已导入，可在设置中恢复导入前的数据"); }
   }

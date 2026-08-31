@@ -1,4 +1,5 @@
 import type { TaskRepeat } from "../domain/models";
+import type { NoteDocument } from "../domain/note-document";
 export type ComposeType = "note" | "task" | "schedule" | "course";
 export interface Draft {
   key: string;
@@ -8,6 +9,10 @@ export interface Draft {
   type: ComposeType;
   title: string;
   body: string;
+  document?: NoteDocument;
+  notebookId?: string;
+  cursor?: number;
+  scroll?: number;
   date: string;
   time: string;
   updatedAt: string;
