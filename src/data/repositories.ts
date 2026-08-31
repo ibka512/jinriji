@@ -1,21 +1,45 @@
-import type { Course, Item } from "../domain/models";
+import type { BackupPayload, Course, Item, TimetableData } from "../domain/models";
 import type { JinrijiDatabase } from "./database";
+import { nextRepeatSchedule, normalizeTags, validateOrganization } from "../domain/organization";
 
 export interface CreateItemInput {
   title: string;
+  body?: string;
   kind: Item["kind"];
   dueAt?: string;
   startAt?: string;
   allDay?: boolean;
+  dateOnly?: string;
+  courseId?: string;
+  pinned?: boolean;
+  tags?: string[];
+  repeat?: Item["repeat"];
 }
 
 export interface CreateCourseInput {
   name: string;
   firstMeetingAt?: string;
+  allDay?: boolean;
+  dateOnly?: string;
+  location?: string;
+  instructor?: string;
 }
+
+export type ItemChanges = Partial<Pick<Item, "title" | "body" | "kind" | "status" | "dueAt" | "startAt" | "allDay" | "dateOnly" | "deletedAt" | "courseId" | "pinned" | "tags" | "repeat">>;
+export type BulkAction = "pin" | "unpin" | "tag" | "complete" | "delete";
+export type CourseChanges = Partial<Pick<Course, "name" | "firstMeetingAt" | "allDay" | "dateOnly" | "deletedAt" | "location" | "instructor">>;
+export interface RecoveryPoint { savedAt: string; payload: BackupPayload }
+export const RECOVERY_KEY = "recovery:v0.5";
 
 export class AppRepository {
   constructor(private readonly database: JinrijiDatabase) {}
+
+  async allRecords(): Promise<{ items: Item[]; courses: Course[] } & TimetableData> {
+    return this.database.transaction("r", [this.database.items, this.database.courses, this.database.terms, this.database.recurrenceRules, this.database.occurrenceExceptions], async () => ({
+      items: await this.database.items.toArray(), courses: await this.database.courses.toArray(),
+      terms: await this.database.terms.toArray(), recurrenceRules: await this.database.recurrenceRules.toArray(), occurrenceExceptions: await this.database.occurrenceExceptions.toArray(),
+    }));
+  }
 
   async listItems(): Promise<Item[]> {
     const items = await this.database.items.toArray();
@@ -27,32 +51,42 @@ export class AppRepository {
     return courses.filter((course) => !course.deletedAt).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
   }
 
-  async createItem(input: CreateItemInput): Promise<Item> {
+  async createItem(input: CreateItemInput, id: string = crypto.randomUUID()): Promise<Item> {
     const now = new Date().toISOString();
     const item: Item = {
-      id: crypto.randomUUID(),
+      id,
       kind: input.kind,
       title: input.title,
-      body: input.title,
+      body: input.body ?? input.title,
       status: "open",
       dueAt: input.dueAt,
       startAt: input.startAt,
       allDay: input.allDay ?? false,
+      dateOnly: input.dateOnly,
+      courseId: input.courseId,
+      pinned: input.pinned,
+      tags: input.tags ? normalizeTags(input.tags) : undefined,
+      repeat: input.repeat,
       reminderOffsets: [],
       createdAt: now,
       updatedAt: now,
       revision: 1,
     };
+    validateOrganization(item);
     await this.database.items.add(item);
     return item;
   }
 
-  async createCourse(input: CreateCourseInput): Promise<Course> {
+  async createCourse(input: CreateCourseInput, id: string = crypto.randomUUID()): Promise<Course> {
     const now = new Date().toISOString();
     const course: Course = {
-      id: crypto.randomUUID(),
+      id,
       name: input.name,
       firstMeetingAt: input.firstMeetingAt,
+      allDay: input.allDay,
+      dateOnly: input.dateOnly,
+      location: input.location,
+      instructor: input.instructor,
       createdAt: now,
       updatedAt: now,
       revision: 1,
@@ -61,21 +95,74 @@ export class AppRepository {
     return course;
   }
 
-  async updateItem(id: string, changes: Partial<Pick<Item, "kind" | "status" | "deletedAt">>): Promise<Item | undefined> {
-    const current = await this.database.items.get(id);
-    if (!current) return undefined;
-    const updated: Item = {
-      ...current,
-      ...changes,
-      updatedAt: new Date().toISOString(),
-      revision: current.revision + 1,
-    };
-    await this.database.items.put(updated);
-    return updated;
+  async updateItem(id: string, changes: ItemChanges, expectedRevision?: number): Promise<Item | undefined> {
+    return this.database.transaction("rw", this.database.items, async () => {
+      const current = await this.database.items.get(id);
+      if (!current) return undefined;
+      if (expectedRevision !== undefined && (current.revision !== expectedRevision || current.deletedAt)) {
+        throw new Error("原记录已变动，草稿仍保留。请重新打开记录，或另存为新记录。");
+      }
+      const now = new Date().toISOString();
+      const completedAt = changes.status === "completed" && current.status !== "completed" ? now
+        : changes.status === "open" ? undefined : current.completedAt;
+      const updated: Item = { ...current, ...changes, completedAt, updatedAt: now, revision: current.revision + 1 };
+      if (updated.kind !== "task") updated.repeat = undefined;
+      if (changes.tags) updated.tags = normalizeTags(changes.tags);
+      validateOrganization(updated);
+      if (changes.status === "completed" && current.status === "open" && updated.repeat && !current.deletedAt) {
+        if (current.repeatNextId) throw new Error("此待办已有下一次，请刷新后查看");
+        const next: Item = { ...updated, ...nextRepeatSchedule(updated, new Date(now)), id: crypto.randomUUID(), status: "open", completedAt: undefined,
+          repeatNextId: undefined, createdAt: now, updatedAt: now, revision: 1 };
+        await this.database.items.add(next);
+        updated.repeatNextId = next.id;
+      }
+      if (changes.status === "open" && current.status === "completed" && current.repeatNextId) {
+        const next = await this.database.items.get(current.repeatNextId);
+        if (next && (next.revision !== 1 || next.status !== "open" || next.deletedAt)) throw new Error("下一次待办已修改，不能撤销此次完成。请在下一次待办中继续处理。");
+        // This is the untouched auto-generated successor, removed only when explicitly undoing completion.
+        if (next) await this.database.items.delete(next.id);
+        updated.repeatNextId = undefined;
+      }
+      await this.database.items.put(updated);
+      return updated;
+    });
+  }
+
+  async updateCourse(id: string, changes: CourseChanges, expectedRevision?: number): Promise<Course | undefined> {
+    return this.database.transaction("rw", this.database.courses, async () => {
+      const current = await this.database.courses.get(id);
+      if (!current) return undefined;
+      if (expectedRevision !== undefined && (current.revision !== expectedRevision || current.deletedAt)) {
+        throw new Error("原课程已变动，草稿仍保留。请重新打开课程，或另存为新记录。");
+      }
+      const updated = { ...current, ...changes, updatedAt: new Date().toISOString(), revision: current.revision + 1 };
+      await this.database.courses.put(updated);
+      return updated;
+    });
   }
 
   async softDeleteItem(id: string): Promise<Item | undefined> {
     return this.updateItem(id, { deletedAt: new Date().toISOString() });
+  }
+
+  async organizeItems(records: { id: string; revision: number }[], action: BulkAction, tags: string[] = []): Promise<number> {
+    if (!records.length) return 0;
+    if (new Set(records.map(item => item.id)).size !== records.length) throw new Error("选择中包含重复记录");
+    const additions = normalizeTags(tags);
+    if (action === "tag" && !additions.length) throw new Error("请输入标签");
+    return this.database.transaction("rw", this.database.items, async () => {
+      let count = 0;
+      for (const selected of records) {
+        const current = await this.database.items.get(selected.id);
+        if (!current || current.deletedAt || current.revision !== selected.revision) throw new Error("部分记录已变动，本次整理未保存。请重新选择后重试。");
+        if (action === "complete" && (current.kind !== "task" || current.status !== "open")) continue;
+        const changes: ItemChanges = action === "pin" ? { pinned: true } : action === "unpin" ? { pinned: false }
+          : action === "tag" ? { tags: normalizeTags([...(current.tags || []), ...additions]) }
+          : action === "complete" ? { status: "completed" } : { deletedAt: new Date().toISOString() };
+        await this.updateItem(current.id, changes, selected.revision); count++;
+      }
+      return count;
+    });
   }
 
   async restoreItem(id: string): Promise<Item | undefined> {
@@ -89,6 +176,57 @@ export class AppRepository {
       if (items.length) await this.database.items.bulkPut(items);
       if (courses.length) await this.database.courses.bulkPut(courses);
     });
+  }
+
+  /** Snapshot, replacement and imported settings commit together or not at all. */
+  async importBackup(payload: BackupPayload): Promise<void> {
+    await this.database.transaction("rw", [this.database.items, this.database.courses, this.database.settings, this.database.terms, this.database.recurrenceRules, this.database.occurrenceExceptions], async () => {
+      await this.replaceWithRecovery(payload);
+    });
+  }
+
+  async restoreRecovery(): Promise<boolean> {
+    return this.database.transaction("rw", [this.database.items, this.database.courses, this.database.settings, this.database.terms, this.database.recurrenceRules, this.database.occurrenceExceptions], async () => {
+      const point = await this.database.settings.get(RECOVERY_KEY);
+      if (!point) return false;
+      await this.replaceWithRecovery((point.value as RecoveryPoint).payload);
+      return true;
+    });
+  }
+
+  private async replaceWithRecovery(payload: BackupPayload): Promise<void> {
+    const now = new Date().toISOString();
+    const theme = await this.database.settings.get("theme");
+    const recovery: RecoveryPoint = {
+      savedAt: now,
+      payload: { version: 4, exportedAt: now, theme: typeof theme?.value === "string" ? theme.value : "sage", glass: true,
+        items: await this.database.items.toArray(), courses: await this.database.courses.toArray(),
+        terms: await this.database.terms.toArray(), recurrenceRules: await this.database.recurrenceRules.toArray(), occurrenceExceptions: await this.database.occurrenceExceptions.toArray() },
+    };
+    await this.database.settings.put({ key: RECOVERY_KEY, value: recovery, updatedAt: now });
+    await this.database.items.clear();
+    await this.database.courses.clear();
+    // An older backup intentionally replaces the full snapshot, not a partial graph.
+    for (const table of [this.database.terms, this.database.recurrenceRules, this.database.occurrenceExceptions]) await table.clear();
+    if (payload.version !== 2) {
+      const previous = recovery.payload.version !== 2 ? recovery.payload : undefined;
+      const bump = <T extends { id: string; revision?: number }>(values: T[], old: T[] = []): T[] => {
+        const versions = new Map(old.map(value => [value.id, value.revision ?? 0]));
+        return values.map(value => ({ ...value, revision: Math.max(value.revision ?? 0, versions.get(value.id) ?? 0) + 1 }));
+      };
+      await this.database.terms.bulkPut(bump(payload.terms, previous?.terms));
+      await this.database.recurrenceRules.bulkPut(bump(payload.recurrenceRules, previous?.recurrenceRules));
+      await this.database.occurrenceExceptions.bulkPut(bump(payload.occurrenceExceptions, previous?.occurrenceExceptions));
+    }
+    // Bump matching revisions so an editor in another tab cannot overwrite imported content.
+    const previous = new Map(recovery.payload.items.map(item => [item.id, item.revision]));
+    const previousCourses = new Map(recovery.payload.courses.map(course => [course.id, course.revision]));
+    if (payload.items.length) await this.database.items.bulkPut(payload.items.map(item => ({ ...item, revision: Math.max(item.revision, previous.get(item.id) ?? 0) + 1 })));
+    if (payload.courses.length) await this.database.courses.bulkPut(payload.courses.map(course => ({ ...course, revision: Math.max(course.revision, previousCourses.get(course.id) ?? 0) + 1 })));
+    await this.database.settings.bulkPut([
+      { key: "theme", value: payload.theme, updatedAt: now },
+      { key: "glass", value: payload.glass, updatedAt: now },
+    ]);
   }
 }
 

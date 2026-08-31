@@ -1,4 +1,9 @@
 import "../styles.css";
+import "./features/entries/experience.css";
+import "./features/courses/courses.css";
+import "./features/entries/organization.css";
+import { initializeOfflineStatus } from "./platform/offline-status";
+import { TimetableRepository } from "./data/timetable-repository";
 import { db } from "./data/database";
 import { migrateLocalStorage } from "./data/migrate-local-storage";
 import { AppRepository, SettingsRepository } from "./data/repositories";
@@ -11,9 +16,8 @@ async function bootstrap(): Promise<void> {
   const migration = await migrateLocalStorage(db, localStorage);
   const repository = new AppRepository(db);
   const settings = new SettingsRepository(db);
-  const [items, courses, storedTheme] = await Promise.all([
-    repository.listItems(),
-    repository.listCourses(),
+  const [records, storedTheme] = await Promise.all([
+    repository.allRecords(),
     settings.get("theme", localStorage.getItem("jinriji:theme") || "sage"),
   ]);
   const rawTheme = String(storedTheme);
@@ -22,12 +26,14 @@ async function bootstrap(): Promise<void> {
   const controller = new AppController(repository, settings, {
     view: view === "notes" || view === "plan" || view === "settings" ? view : "today",
     theme,
-    items,
-    courses,
-  });
+    items: records.items,
+    courses: records.courses,
+    timetable: records,
+  }, new TimetableRepository(db));
   controller.initialize();
+  initializeOfflineStatus();
   document.body.dataset.appReady = "true";
-  registerServiceWorker();
+  registerServiceWorker(() => controller.prepareForUpdate());
 
   if (migration.migrated && migration.sourceCount > 0) {
     showToast(`已安全迁移 ${migration.sourceCount} 条旧记录`);

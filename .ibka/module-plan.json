@@ -72,6 +72,94 @@
       "expected_outputs": ["本地中文明朝体分片", "和纸页面背景", "暗色表面令牌", "可打断交互动效"],
       "verification": "320/390/768/1440 视口、横屏、深色、减少动态、200% 字号、字体实际渲染与核心创建流程通过",
       "status": "completed"
+    },
+    {
+      "id": "M08",
+      "name": "v0.5 数据闭环",
+      "objective": "扩展现有数据层，支持安全编辑、草稿、最近删除与备份回退",
+      "owner": "web-design-engineer",
+      "expected_outputs": ["版本冲突检测", "独立草稿存储", "删除与恢复", "导入校验与事务恢复点"],
+      "verification": "34 个单元测试通过，包含旧数据兼容、事务回滚、时区日期、草稿存储失败及更新保护",
+      "status": "completed"
+    },
+    {
+      "id": "M09",
+      "name": "v0.5 日常界面",
+      "objective": "实现真实首页、完整详情编辑、搜索筛选、待办分组、课程管理与返回位置保留",
+      "owner": "web-design-engineer",
+      "support": ["ui-ux-pro-max"],
+      "depends_on": ["M08"],
+      "expected_outputs": ["真实日期与数据首页", "手机编辑与宽屏分栏", "搜索及导航状态保留", "待办分组与单次课程管理"],
+      "verification": "浏览器核心流程、跨天状态、详情返回位置及多标签冲突保护通过",
+      "status": "completed"
+    },
+    {
+      "id": "M10",
+      "name": "v0.5 体验与本地质量验收",
+      "objective": "验证窄屏输入、键盘、错误重试、离线及安全更新；本轮不发布",
+      "owner": "webapp-testing",
+      "depends_on": ["M09"],
+      "expected_outputs": ["9 组浏览器验收", "19 张多端截图", "生产资源预缓存", "更新后的设计与开发说明"],
+      "verification": "类型、34 个单元测试、构建、9 组 Chromium 验收及截图复核通过；真实 iPhone/Safari 待实机验证",
+      "status": "completed"
+    },
+    {
+      "id": "M11",
+      "name": "v0.6 课程与学习安排",
+      "objective": "复用已有数据表，完成学期、重复排课、单次例外和课程关联记录",
+      "owner": "web-design-engineer",
+      "expected_outputs": ["按学期时区派生的课程", "单双周与多时段规则", "单次调课停课及恢复", "关联记录", "完整 v3 备份及旧格式兼容"],
+      "verification": "日期时区、单双周、跨周调课、版本冲突、旧备份回退及跨表事务回滚测试通过",
+      "status": "completed"
+    },
+    {
+      "id": "M12",
+      "name": "v0.6 UI-001 与多端课表",
+      "objective": "将指定分段切换融入已有主题，并分别适配手机按日与宽屏按周阅读",
+      "owner": "animate",
+      "support": ["web-design-engineer"],
+      "depends_on": ["M11"],
+      "expected_outputs": ["单滑块等宽胶囊", "可打断切换与按压反馈", "键盘与减少动态", "紧凑周时间轴与重叠课程分栏", "移动与大字号设置表单"],
+      "verification": "指示器定位、快速切换、键盘、减少动态、窄屏及 200% 字号检查通过；原始 MIT 许可已保留",
+      "status": "completed"
+    },
+    {
+      "id": "M13",
+      "name": "v0.6 本地质量验收",
+      "objective": "验证课程完整流程与既有功能，不提交、推送或部署",
+      "owner": "webapp-testing",
+      "depends_on": ["M12"],
+      "expected_outputs": ["53 个单元测试", "14 组浏览器验收", "31 张多端截图", "更新后的说明与本地预览"],
+      "verification": "类型、单元测试、生产构建及 Chromium 浏览器验收通过；真机 iPhone/Safari 与线上部署未执行",
+      "status": "completed"
+    },
+    {
+      "id": "M14",
+      "name": "v0.7 侧栏与导航图标",
+      "objective": "移除品牌印章、优化侧栏排版，并在两端导航区分线框与实心图标",
+      "owner": "web-design-engineer",
+      "expected_outputs": ["纯文字品牌", "对齐与紧凑侧栏", "共享两态导航图标"],
+      "verification": "四路导航、aria-current、图标实际形态与响应式截图检查",
+      "status": "completed"
+    },
+    {
+      "id": "M15",
+      "name": "v0.7 长期使用效率",
+      "objective": "实现置顶、标签、批量整理与按原计划日期推进的重复待办",
+      "owner": "web-design-engineer",
+      "expected_outputs": ["组合筛选", "批量事务与恢复", "每日每周每月重复", "完整 v4 备份及旧版兼容"],
+      "verification": "标签边界、跨月夏令时、完成幂等性、撤销保护、批量冲突与回滚、新旧备份往返",
+      "status": "completed"
+    },
+    {
+      "id": "M16",
+      "name": "v0.7 快捷操作与本地验收",
+      "objective": "补充不打断输入的快捷键、真实离线状态和完整回归",
+      "owner": "webapp-testing",
+      "depends_on": ["M14", "M15"],
+      "expected_outputs": ["快捷键说明", "离线状态与缓存提示", "单元测试、浏览器回归及多端截图"],
+      "verification": "76 个单元测试、20 组浏览器流程、类型检查与构建通过；41 张截图及代表性布局已复核，不提交、推送或部署；iPhone/Safari 尚待真机验证",
+      "status": "completed"
     }
   ]
 }

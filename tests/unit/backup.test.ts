@@ -2,6 +2,21 @@ import { describe, expect, it } from "vitest";
 import { createBackup, parseBackup } from "../../src/data/backup";
 
 describe("backup compatibility", () => {
+  it.each([
+    { id: "invalid" },
+    null,
+    "not an object",
+  ])("rejects malformed records before import: %j", record => {
+    expect(() => parseBackup(JSON.stringify({ ...createBackup([], [], "sage", true), items: [record] }))).toThrow();
+  });
+  it("rejects duplicate IDs without silently losing a record", () => {
+    const legacy = { entries: [{ id: "same", text: "一" }, { id: "same", text: "二" }] };
+    expect(() => parseBackup(JSON.stringify(legacy))).toThrow("重复");
+  });
+  it("rejects impossible dates and unknown backup versions", () => {
+    expect(() => parseBackup(JSON.stringify({ entries: [{ text: "无效", date: "2026-02-30" }] }))).toThrow();
+    expect(() => parseBackup(JSON.stringify({ version: 99, entries: [] }))).toThrow();
+  });
   it("still accepts v2 backups with the retired glass setting disabled", () => {
     const source = createBackup([], [], "aizome", false);
     const parsed = parseBackup(JSON.stringify(source));

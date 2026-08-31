@@ -44,11 +44,13 @@ jobs:
           done
           curl --fail http://127.0.0.1:4173/ > /dev/null
           python3 tests/ui_acceptance.py
+          python3 tests/timetable_acceptance.py
+          python3 tests/organization_acceptance.py
       - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: browser-evidence
-          path: test-results/screenshots
+          path: test-results/screenshots-v0.7
           if-no-files-found: ignore
           retention-days: 7

@@ -14,231 +14,76 @@
   </head>
   <body>
     <a class="skip-link" href="#main-content">跳到主要内容</a>
-    <div class="ambient" aria-hidden="true">
-      <span class="ambient__sun"></span>
-      <span class="ambient__branch"></span>
-    </div>
-
+    <div class="ambient" aria-hidden="true"><span class="ambient__branch"></span></div>
     <div class="app-shell">
       <aside class="sidebar glass" aria-label="主导航">
-        <a class="brand" href="#today" aria-label="今日记首页">
-          <span class="brand__seal">今</span>
-          <span class="brand__text"><strong>今日记</strong><small>KYO · KI</small></span>
-        </a>
-
+        <a class="brand" href="#today" aria-label="今日记首页"><span class="brand__text"><strong>今日记</strong><small>KYO · KI</small></span></a>
         <nav class="nav-list">
-          <button class="nav-item is-active" data-view="today" aria-label="今日" aria-current="page">
-            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"/><path d="M9.5 20v-5.5h5V20"/></svg></span><span>今日</span>
-          </button>
-          <button class="nav-item" data-view="notes" aria-label="记录">
-            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3.5h8L19 8v12.5h-12.5z"/><path d="M14.5 3.5V8H19M9 12h7M9 15.5h5"/></svg></span><span>记录</span>
-          </button>
-          <button class="nav-item" data-view="plan" aria-label="计划">
-            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17M8 14h2M14 14h2M8 17h2"/></svg></span><span>计划</span>
-          </button>
-          <button class="nav-item" data-view="settings" aria-label="设置">
-            <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c.5-4.1 2.7-6.2 6.5-6.2s6 2.1 6.5 6.2"/></svg></span><span>设置</span>
-          </button>
-        </nav>
-
-        <div class="semester-card paper-card">
-          <span class="eyebrow">秋季学期</span>
-          <strong>第 2 教学周</strong>
-          <div class="progress"><span style="width: 12%"></span></div>
-          <small>距离期中还有 7 周</small>
-        </div>
-
-        <button class="profile-button" type="button" data-view="settings" aria-label="打开设置">
-          <span class="avatar">周</span>
-          <span><strong>我的空间</strong></span>
-        </button>
+          <button class="nav-item is-active" data-view="today" aria-label="今日" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"/><path d="M9.5 20v-5.5h5V20"/></svg></span><span>今日</span></button>
+          <button class="nav-item" data-view="notes" aria-label="记录"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3.5h8L19 8v12.5h-12.5z"/><path d="M14.5 3.5V8H19M9 12h7M9 15.5h5"/></svg></span><span>记录</span></button>
+          <button class="nav-item" data-view="plan" aria-label="计划"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17M8 14h2M14 14h2M8 17h2"/></svg></span><span>计划</span></button>
+          <button class="nav-item" data-view="settings" aria-label="设置"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c.5-4.1 2.7-6.2 6.5-6.2s6 2.1 6.5 6.2"/></svg></span><span>设置</span></button>
+        </nav><div class="sidebar-foot"><span id="sidebar-storage-status">本地保存</span><span id="sidebar-count"></span></div>
       </aside>
-
       <main class="main-content" id="main-content">
+        <p class="offline-banner" id="offline-banner" role="status" hidden></p>
+        <div class="draft-banner" id="draft-banner" hidden><span id="draft-banner-text">有未完成的草稿</span><button class="text-button" id="resume-draft">继续编辑</button></div>
         <section class="view is-active" id="view-today" data-view-panel="today">
-          <header class="page-header">
-            <div>
-              <span class="eyebrow">二〇二六 · 处暑</span>
-              <h1 tabindex="-1">八月三十，星期日</h1>
-            </div>
-          </header>
-
-          <div class="today-grid">
-            <section class="now-card paper-card" aria-labelledby="now-title">
-              <div class="card-heading">
-                <div><h2 id="now-title">设计史</h2></div>
-                <span class="live-pill"><i></i>进行中</span>
-              </div>
-              <p class="course-meta">10:00–11:40 · 艺术楼 302</p>
-              <div class="time-progress"><span></span></div>
-              <div class="course-footer">
-                <span>还有 46 分钟</span>
-                <button type="button" data-view-jump="notes">课程笔记 <span aria-hidden="true">→</span></button>
-              </div>
-            </section>
-
-            <section class="focus-card paper-card" aria-label="今日专注">
-              <span class="eyebrow">今日完成</span>
-              <strong>3 <small>/ 5</small></strong>
-              <div class="focus-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-            </section>
-
-            <section class="timeline-card paper-card" aria-labelledby="timeline-title">
-              <div class="card-heading">
-                <div><h2 id="timeline-title">今日安排</h2></div>
-                <button class="text-button" type="button" data-view-jump="plan">周计划</button>
-              </div>
-              <ol class="timeline-list">
-                <li class="timeline-item">
-                  <time>13:30</time><span class="timeline-dot sage"></span>
-                  <div><strong>提交调研提纲</strong><small>作品集项目 · 今天截止</small></div>
-                  <button class="check-button" type="button" aria-label="完成提交调研提纲"></button>
-                </li>
-                <li class="timeline-item">
-                  <time>14:00</time><span class="timeline-dot persimmon"></span>
-                  <div><strong>小组讨论</strong><small>图书馆 · 二层讨论室</small></div>
-                  <span class="people" aria-label="3 位成员"><i>林</i><i>余</i><i>陈</i></span>
-                </li>
-                <li class="timeline-item">
-                  <time>16:00</time><span class="timeline-dot blue"></span>
-                  <div><strong>体育课</strong><small>东操场 · 记得带水</small></div>
-                  <span class="weather">24°</span>
-                </li>
-                <li class="timeline-item is-soft">
-                  <time>晚上</time><span class="timeline-dot ink"></span>
-                  <div><strong>复习设计史第三章</strong><small>预计 40 分钟</small></div>
-                  <button class="check-button" type="button" aria-label="完成复习设计史第三章"></button>
-                </li>
-              </ol>
-            </section>
-
-            <section class="note-preview paper-card" aria-labelledby="note-preview-title">
-              <div class="card-heading">
-                <div><h2 id="note-preview-title">今日记录</h2></div>
-                <span class="note-time">上午 08:42</span>
-              </div>
-              <blockquote>“作品集不应该只是结果的陈列，它更像是思考留下的河床。”</blockquote>
-              <div class="note-tags"><span># 作品集</span><span># 灵感</span></div>
-            </section>
-          </div>
+          <header class="page-header"><div><span class="eyebrow" id="today-year"></span><h1 id="today-date" tabindex="-1">今日</h1></div><button class="primary-button desktop-create" data-open-compose>记一笔</button></header>
+          <div class="today-grid" id="today-content"><p class="empty-state">正在读取记录…</p></div>
         </section>
-
         <section class="view" id="view-notes" data-view-panel="notes">
-          <header class="page-header compact-header">
-            <div><h1 tabindex="-1">记录</h1></div>
-            <button class="primary-button" type="button" data-open-compose>新建记录</button>
-          </header>
-          <div class="notes-masonry" id="notes-list">
-            <article class="note-card paper-card note-card--feature"><span class="eyebrow">灵感 · 今天</span><h2>关于作品集叙事</h2><p>作品集不应该只是结果的陈列，它更像是思考留下的河床。过程中的犹豫、选择与失败，也应当成为叙事的一部分。</p><footer><span># 作品集</span><time>08:42</time></footer></article>
-            <article class="note-card paper-card"><span class="eyebrow">课程 · 昨天</span><h2>设计史：包豪斯</h2><p>形式并不是装饰，而是材料、功能与生产方式共同推导出的答案。</p><footer><span># 设计史</span><time>21:16</time></footer></article>
-            <article class="note-card paper-card note-card--warm"><span class="eyebrow">生活 · 周五</span><h2>九月愿望</h2><p>每周读完一本薄书；早晨少看手机；在天气好的时候绕湖走一圈。</p><footer><span># 月度计划</span><time>17:30</time></footer></article>
-          </div>
+          <header class="page-header compact-header"><div><h1 tabindex="-1">记录</h1></div><button class="primary-button" data-open-compose data-compose-type="note">新建记录</button></header>
+          <div class="records-toolbar"><label class="search-field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><span class="sr-only">搜索记录</span><input id="search-records" type="search" placeholder="搜索记录" autocomplete="off" /></label><label class="filter-field"><span class="sr-only">记录类型</span><select id="record-filter"><option value="all">全部</option><option value="note">便签</option><option value="task">待办</option><option value="event">日程</option></select></label></div>
+          <p class="sr-only" id="search-summary" role="status"></p>
+          <div class="organization-filters"><div><button class="text-button" id="pinned-only" aria-pressed="false">置顶</button><label id="record-tag-label" hidden><span class="sr-only">按标签筛选</span><select id="record-tag-filter"><option value="">全部标签</option></select></label></div><button class="text-button" id="organize-toggle" aria-pressed="false">整理</button></div>
+          <section class="bulk-toolbar paper-card" id="bulk-toolbar" aria-label="批量整理" hidden><div class="bulk-summary"><span id="selection-count" role="status">已选 0 项</span><button class="text-button" id="select-visible">全选</button></div><div class="bulk-actions"><button class="text-button" data-bulk-action="pin">置顶</button><button class="text-button" data-bulk-action="unpin">取消置顶</button><button class="text-button" data-bulk-action="tag">添加标签</button><button class="text-button" data-bulk-action="complete">完成待办</button><button class="text-button danger-text" data-bulk-action="delete">删除</button></div><label class="study-field" id="bulk-tags-field" hidden><span>添加到所选记录</span><input id="bulk-tags" placeholder="标签，用逗号分隔" maxlength="500"/></label></section>
+          <div class="records-workspace"><div class="notes-masonry" id="notes-list"></div><aside class="entry-detail paper-card" id="entry-detail" aria-labelledby="detail-title" hidden></aside></div>
         </section>
-
         <section class="view" id="view-plan" data-view-panel="plan">
-          <header class="page-header compact-header">
-            <div><h1 tabindex="-1">计划</h1></div>
-            <button class="primary-button" type="button" data-open-compose data-compose-type="task">添加事项</button>
-          </header>
-          <div class="segmented glass" role="tablist" aria-label="计划视图"><span class="segmented__selection" aria-hidden="true"></span><button class="is-active" role="tab" aria-selected="true" data-plan-tab="week">本周</button><button role="tab" aria-selected="false" data-plan-tab="tasks">待办</button><button role="tab" aria-selected="false" data-plan-tab="courses">课程表</button></div>
-          <div class="plan-panel is-active" data-plan-panel="week">
-          <div class="week-board paper-card">
-            <div class="week-head"><span>时间</span><strong>一<small>31</small></strong><strong>二<small>01</small></strong><strong>三<small>02</small></strong><strong>四<small>03</small></strong><strong>五<small>04</small></strong></div>
-            <div class="week-grid">
-              <div class="time-labels"><span>08:00</span><span>10:00</span><span>12:00</span><span>14:00</span><span>16:00</span></div>
-              <div class="day-column"><article class="calendar-event event-sage" style="--start:1;--span:2"><strong>设计史</strong><small>艺术楼 302</small></article><article class="calendar-event event-paper" style="--start:5;--span:1"><strong>提交提纲</strong><small>13:30</small></article></div>
-              <div class="day-column"><article class="calendar-event event-blue" style="--start:2;--span:2"><strong>高等数学</strong><small>教三 201</small></article></div>
-              <div class="day-column is-today"><span class="now-line"></span><article class="calendar-event event-warm" style="--start:4;--span:2"><strong>小组讨论</strong><small>图书馆</small></article></div>
-              <div class="day-column"><article class="calendar-event event-sage" style="--start:1;--span:2"><strong>设计基础</strong><small>工作室 A</small></article></div>
-              <div class="day-column"><article class="calendar-event event-ink" style="--start:3;--span:2"><strong>摄影实践</strong><small>校外采风</small></article></div>
-            </div>
-          </div>
-          </div>
-          <div class="plan-panel" data-plan-panel="tasks">
-            <section class="task-board paper-card">
-              <div class="card-heading"><div><h2>待办清单</h2></div><span class="count-pill" id="task-count">2</span></div>
-              <div class="task-group">
-                <span class="task-group__label">今天</span>
-                <label class="task-row"><input type="checkbox" /><i></i><span><strong>提交调研提纲</strong><small>作品集项目 · 13:30</small></span><em>高</em></label>
-                <label class="task-row"><input type="checkbox" /><i></i><span><strong>复习设计史第三章</strong><small>预计 40 分钟</small></span></label>
-              </div>
-              <div class="task-group" id="user-task-list"><span class="task-group__label">新近添加</span></div>
-            </section>
-          </div>
-          <div class="plan-panel" data-plan-panel="courses">
-            <div class="course-grid">
-              <article class="course-card paper-card course-card--sage"><span class="course-card__mark">史</span><span class="eyebrow">周一 · 10:00</span><h2>设计史</h2><p>艺术楼 302 · 林老师</p><footer><span>2 篇笔记</span><span>1 项作业</span></footer></article>
-              <article class="course-card paper-card course-card--blue"><span class="course-card__mark">数</span><span class="eyebrow">周二 · 09:00</span><h2>高等数学</h2><p>教三 201 · 陈老师</p><footer><span>1 篇笔记</span><span>无待办</span></footer></article>
-              <article class="course-card paper-card course-card--warm"><span class="course-card__mark">设</span><span class="eyebrow">周四 · 08:00</span><h2>设计基础</h2><p>工作室 A · 赵老师</p><footer><span>4 篇笔记</span><span>2 项作业</span></footer></article>
-              <div id="user-course-list"></div>
-              <button class="add-course-card glass" type="button" data-open-compose data-compose-type="course"><span>＋</span><strong>添加课程</strong></button>
-            </div>
-          </div>
+          <header class="page-header compact-header"><div><h1 tabindex="-1">计划</h1></div><button class="primary-button" data-open-compose>添加事项</button></header>
+          <div class="segmented" role="tablist" aria-label="计划视图"><span class="segmented__selection" aria-hidden="true"></span><button id="tab-week" class="is-active" role="tab" aria-controls="panel-week" aria-selected="true" data-plan-tab="week">本周</button><button id="tab-tasks" role="tab" aria-controls="panel-tasks" aria-selected="false" tabindex="-1" data-plan-tab="tasks">待办</button><button id="tab-courses" role="tab" aria-controls="panel-courses" aria-selected="false" tabindex="-1" data-plan-tab="courses">课程表</button></div>
+          <div class="plan-panel is-active" id="panel-week" role="tabpanel" aria-labelledby="tab-week" data-plan-panel="week"><div class="week-controls"><h2 id="week-range"></h2><div><button class="icon-button" data-week-step="-1" aria-label="上一周">‹</button><button class="text-button" data-week-step="0">本周</button><button class="icon-button" data-week-step="1" aria-label="下一周">›</button></div></div><div id="week-agenda" class="week-agenda"></div></div>
+          <div class="plan-panel" id="panel-tasks" role="tabpanel" aria-labelledby="tab-tasks" data-plan-panel="tasks"><section class="task-board paper-card"><div class="card-heading"><h2>待办清单</h2><span class="count-pill" id="task-count">0</span></div><div id="user-task-list"></div></section></div>
+          <div class="plan-panel" id="panel-courses" role="tabpanel" aria-labelledby="tab-courses" data-plan-panel="courses"><div id="term-toolbar" class="term-toolbar"></div><section id="course-timetable" aria-label="学期课程表"></section><div class="course-library-heading"><h2>我的课程</h2><button class="secondary-button" data-open-compose data-compose-type="course">添加课程</button></div><div class="course-grid" id="user-course-list"></div></div>
         </section>
-
         <section class="view" id="view-settings" data-view-panel="settings">
           <header class="page-header compact-header"><div><h1 tabindex="-1">设置</h1></div></header>
           <div class="settings-grid">
-            <section class="settings-card paper-card" aria-labelledby="theme-heading">
-              <h2 class="settings-heading" id="theme-heading"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.5-3.3 1.8 1.8 0 0 1 1.4-2.9H18A3 3 0 0 0 21 12a9 9 0 0 0-9-9Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="11" cy="7" r=".8"/><circle cx="15.5" cy="8.5" r=".8"/></svg><span>主题</span></h2>
-              <div class="theme-swatches" role="radiogroup" aria-label="选择主题">
-                <button class="theme-dot is-active" type="button" role="radio" aria-checked="true" data-theme="sage" aria-label="苔庭" style="--swatch:#667b68"><span class="theme-dot__swatch" aria-hidden="true"></span><span>苔庭</span></button>
-                <button class="theme-dot" type="button" role="radio" aria-checked="false" tabindex="-1" data-theme="sakura" aria-label="樱雨" style="--swatch:#9d6f78"><span class="theme-dot__swatch" aria-hidden="true"></span><span>樱雨</span></button>
-                <button class="theme-dot" type="button" role="radio" aria-checked="false" tabindex="-1" data-theme="aizome" aria-label="蓝染" style="--swatch:#5a7185"><span class="theme-dot__swatch" aria-hidden="true"></span><span>蓝染</span></button>
-                <button class="theme-dot" type="button" role="radio" aria-checked="false" tabindex="-1" data-theme="kaki" aria-label="柿色" style="--swatch:#a86143"><span class="theme-dot__swatch" aria-hidden="true"></span><span>柿色</span></button>
-              </div>
+            <section class="settings-card paper-card" aria-labelledby="theme-heading"><h2 class="settings-heading" id="theme-heading"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.5-3.3 1.8 1.8 0 0 1 1.4-2.9H18A3 3 0 0 0 21 12a9 9 0 0 0-9-9Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="11" cy="7" r=".8"/><circle cx="15.5" cy="8.5" r=".8"/></svg><span>主题</span></h2>
+              <div class="theme-swatches" role="radiogroup" aria-label="选择主题"><button class="theme-dot is-active" role="radio" aria-checked="true" data-theme="sage" aria-label="苔庭" style="--swatch:#667b68"><span class="theme-dot__swatch" aria-hidden="true"></span><span>苔庭</span></button><button class="theme-dot" role="radio" aria-checked="false" tabindex="-1" data-theme="sakura" aria-label="樱雨" style="--swatch:#9d6f78"><span class="theme-dot__swatch" aria-hidden="true"></span><span>樱雨</span></button><button class="theme-dot" role="radio" aria-checked="false" tabindex="-1" data-theme="aizome" aria-label="蓝染" style="--swatch:#5a7185"><span class="theme-dot__swatch" aria-hidden="true"></span><span>蓝染</span></button><button class="theme-dot" role="radio" aria-checked="false" tabindex="-1" data-theme="kaki" aria-label="柿色" style="--swatch:#a86143"><span class="theme-dot__swatch" aria-hidden="true"></span><span>柿色</span></button></div>
             </section>
-            <section class="settings-card paper-card data-card" aria-labelledby="data-heading">
-              <h2 class="settings-heading" id="data-heading"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="13" rx="2"/><path d="M3 3h18v5H3zM9 12h6"/></svg><span>数据与备份</span></h2>
-              <div class="data-actions">
-                <button class="settings-action" id="export-data" type="button"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></svg><span>导出数据</span><svg class="setting-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
-                <label class="settings-action file-button"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M4 16v4h16v-4"/></svg><span>导入数据</span><input id="import-data" type="file" accept="application/json" aria-label="导入数据" aria-describedby="import-hint" /><svg class="setting-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></label>
-              </div>
-              <p class="settings-hint" id="import-hint">数据保存在此浏览器。导入将替换现有记录，请先导出备份。</p>
+            <section class="settings-card paper-card data-card" aria-labelledby="data-heading"><h2 class="settings-heading" id="data-heading"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="13" rx="2"/><path d="M3 3h18v5H3zM9 12h6"/></svg><span>数据与备份</span></h2>
+              <div class="data-actions"><button class="settings-action" id="export-data"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></svg><span>导出数据<small id="last-export">尚未导出</small></span></button><label class="settings-action file-button"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M4 16v4h16v-4"/></svg><span>导入数据</span><input id="import-data" type="file" accept="application/json,.json" aria-label="导入数据" aria-describedby="import-hint" /></label><button class="settings-action" id="restore-recovery" hidden><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6M12 7v5l3 2"/></svg><span>恢复导入前的数据<small id="recovery-time"></small></span></button></div><p class="settings-hint" id="import-hint">数据仅保存在此浏览器。导入前会预览并保留恢复点；请定期导出文件。</p>
             </section>
+            <section class="settings-card paper-card" aria-labelledby="trash-heading"><h2 class="settings-heading" id="trash-heading"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg><span>最近删除</span></h2><div id="trash-list"></div></section>
+            <section class="settings-card paper-card" aria-labelledby="storage-heading"><h2 class="settings-heading" id="storage-heading"><svg class="setting-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4m-4-11 3 3 5-5"/></svg><span id="network-status">本地优先</span></h2><p class="settings-hint" id="offline-readiness"></p><p class="settings-hint">记录保存在此浏览器，不会自动云同步。请定期导出备份。</p><details id="keyboard-shortcuts" class="keyboard-shortcuts"><summary>快捷键</summary><dl><dt><kbd>N</kbd></dt><dd>按当前页面新建</dd><dt><kbd>⌘ / Ctrl + K</kbd></dt><dd>快速记录</dd><dt><kbd>/</kbd></dt><dd>搜索记录</dd><dt><kbd>Alt + 1–4</kbd></dt><dd>切换主页面</dd><dt><kbd>⌘ / Ctrl + Enter</kbd></dt><dd>保存编辑</dd><dt><kbd>Esc</kbd></dt><dd>关闭编辑器或退出整理</dd><dt><kbd>?</kbd></dt><dd>查看快捷键</dd></dl><p class="settings-hint">单键快捷操作只在未输入文字时生效。</p></details></section>
+            <p class="settings-hint version-label">今日记 0.7 · 本地优先</p>
           </div>
         </section>
       </main>
-
-      <aside class="context-panel" aria-label="今日摘要">
-        <section class="mini-calendar paper-card">
-          <div class="card-heading"><div><span class="eyebrow">八月</span><h2>本月</h2></div></div>
-          <div class="calendar-weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
-          <div class="calendar-days"><span></span><span></span><span></span><span></span><span></span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span><span>29</span><strong>30</strong><span>31</span></div>
-        </section>
-        <section class="quiet-card"><span class="moon" aria-hidden="true"></span><p>“日日是好日”</p></section>
-        <section class="upcoming paper-card"><div class="card-heading"><div><span class="eyebrow">明日</span><h2>预览</h2></div><span class="count-pill">4</span></div><ul><li><time>08:00</time><span><strong>晨间阅读</strong><small>30 分钟</small></span></li><li><time>10:00</time><span><strong>设计基础</strong><small>工作室 A</small></span></li><li><time>15:30</time><span><strong>预约打印</strong><small>图文中心</small></span></li></ul></section>
-      </aside>
+      <aside class="context-panel" aria-label="今日摘要"><section class="mini-calendar paper-card" id="mini-calendar"></section><section class="upcoming paper-card" id="tomorrow-preview"></section></aside>
     </div>
-
-    <div class="mobile-tab-area" aria-label="移动端操作区">
-      <nav class="mobile-nav glass" aria-label="移动端主导航">
-        <span class="mobile-nav__selection" aria-hidden="true"></span>
-        <button class="is-active" data-view="today" aria-label="今日"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"/><path d="M9.5 20v-5.5h5V20"/></svg></span><small>今日</small></button>
-        <button data-view="notes" aria-label="记录"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h8L19 8v12.5h-12.5z"/><path d="M14.5 3.5V8H19M9 12h7M9 15.5h5"/></svg></span><small>记录</small></button>
-        <button data-view="plan" aria-label="计划"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17M8 14h2M14 14h2M8 17h2"/></svg></span><small>计划</small></button>
-        <button data-view="settings" aria-label="设置"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c.5-4.1 2.7-6.2 6.5-6.2s6 2.1 6.5 6.2"/></svg></span><small>设置</small></button>
-      </nav>
-      <button class="mobile-quick-add glass" type="button" data-open-compose aria-label="快速记录"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-    </div>
-
-    <div class="compose-layer" id="compose-layer" aria-hidden="true">
-      <button class="compose-backdrop" data-close-compose aria-label="关闭编辑器"></button>
-      <section class="compose-sheet glass" role="dialog" aria-modal="true" aria-labelledby="compose-title">
-        <div class="sheet-handle" aria-hidden="true"></div>
-        <div class="compose-head"><div><h2 id="compose-title">新建便签</h2></div><button class="icon-button" data-close-compose aria-label="关闭"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
-        <label class="sr-only" for="quick-entry">记录内容</label>
-        <textarea id="quick-entry" rows="5" placeholder="写点什么…"></textarea>
-        <div class="compose-options"><button class="option-chip is-active" data-entry-type="note">便签</button><button class="option-chip" data-entry-type="task">待办</button><button class="option-chip" data-entry-type="schedule">日程</button><button class="option-chip" data-entry-type="course">课程</button></div>
-        <div class="entry-details" id="entry-details" hidden>
-          <label><span>日期</span><input id="entry-date" type="date" /></label>
-          <label><span>时间</span><input id="entry-time" type="time" /></label>
-        </div>
-        <div class="compose-footer"><span><kbd>⌘</kbd> + <kbd>Enter</kbd> 保存</span><button class="primary-button" id="save-entry" type="button">保存记录</button></div>
-      </section>
-    </div>
-
-    <div class="toast glass" id="toast" role="status" aria-live="polite"><span id="toast-message">已保存</span><button id="toast-action" type="button" hidden>撤销</button></div>
+    <div class="mobile-tab-area" aria-label="移动端操作区"><nav class="mobile-nav glass" aria-label="移动端主导航"><span class="mobile-nav__selection" aria-hidden="true"></span>
+      <button class="is-active" data-view="today" aria-label="今日"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"/><path d="M9.5 20v-5.5h5V20"/></svg></span><small>今日</small></button>
+      <button data-view="notes" aria-label="记录"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h8L19 8v12.5h-12.5z"/><path d="M14.5 3.5V8H19M9 12h7M9 15.5h5"/></svg></span><small>记录</small></button>
+      <button data-view="plan" aria-label="计划"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17M8 14h2M14 14h2M8 17h2"/></svg></span><small>计划</small></button>
+      <button data-view="settings" aria-label="设置"><span class="tab-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c.5-4.1 2.7-6.2 6.5-6.2s6 2.1 6.5 6.2"/></svg></span><small>设置</small></button>
+    </nav><button class="mobile-quick-add glass" data-open-compose aria-label="快速记录"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+    <dialog class="editor-dialog glass" id="compose-layer" aria-labelledby="compose-title"><div class="compose-head"><h2 id="compose-title">新建便签</h2><button class="icon-button" data-close-compose aria-label="关闭编辑器"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+      <form id="entry-form" novalidate><div class="editor-fields"><label class="field-label" for="entry-title" id="entry-title-label">标题（选填）</label><input id="entry-title" class="title-input" type="text" placeholder="取一个标题" maxlength="200000" autocomplete="off" /><label class="field-label" for="quick-entry" id="entry-body-label">内容</label><textarea id="quick-entry" rows="6" placeholder="写点什么…" maxlength="200000"></textarea>
+        <div class="compose-options" aria-label="记录类型"><button type="button" class="option-chip is-active" data-entry-type="note" aria-pressed="true">便签</button><button type="button" class="option-chip" data-entry-type="task" aria-pressed="false">待办</button><button type="button" class="option-chip" data-entry-type="schedule" aria-pressed="false">日程</button><button type="button" class="option-chip" data-entry-type="course" aria-pressed="false">课程</button></div>
+        <div class="entry-details" id="entry-details" hidden><label><span>日期</span><input id="entry-date" type="date" /></label><label><span>时间（选填）</span><input id="entry-time" type="time" /></label></div>
+        <label class="study-field" id="entry-course-field"><span>关联课程（选填）</span><select id="entry-course"><option value="">不关联</option></select></label>
+        <label class="study-field" id="entry-repeat-field" hidden><span>重复</span><select id="entry-repeat" aria-describedby="repeat-hint"><option value="">不重复</option><option value="daily">每天</option><option value="weekly">每周</option><option value="monthly">每月</option></select><small class="record-meta" id="repeat-hint" hidden>完成后按原计划生成下一次，跳过遗漏日期。</small></label>
+        <details id="entry-organization" class="entry-organization"><summary>标签</summary><label class="study-field"><span class="sr-only">记录标签</span><input id="entry-tags" placeholder="如：学习，生活" maxlength="500" aria-describedby="tags-hint"/><small id="tags-hint" class="record-meta">用逗号分隔，每个最多 20 字。</small></label></details>
+        <div id="course-metadata" hidden><div class="study-fields-pair"><label class="study-field"><span>教师（选填）</span><input id="entry-instructor" maxlength="200"/></label><label class="study-field"><span>地点（选填）</span><input id="entry-location" maxlength="200"/></label></div><p class="record-meta">重复排课可在课程详情中设置。</p></div>
+        <p class="field-error" id="entry-error" role="alert" hidden></p>
+      </div><div class="editor-footer"><span id="draft-status" role="status"></span><div><button type="button" class="text-button" id="discard-draft">舍弃草稿</button><button type="button" class="secondary-button" id="save-as-new" hidden>另存为新记录</button><button class="primary-button" id="save-entry" type="submit">保存记录</button></div></div></form>
+    </dialog>
+    <dialog class="study-dialog paper-card" id="study-dialog" aria-labelledby="study-title"><div class="compose-head"><h2 id="study-title"></h2><button class="icon-button" data-study-action="close" aria-label="关闭课程设置"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><form id="study-form" novalidate><div class="study-scroll"><div id="study-fields"></div><p id="study-error" class="field-error" role="alert" hidden></p></div><div class="study-footer"><div id="study-extra-actions"></div><button id="study-save" class="primary-button" type="submit">保存</button></div></form></dialog>
+    <dialog class="confirm-dialog paper-card" id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message"><h2 id="confirm-title"></h2><p id="confirm-message"></p><p id="confirm-error" class="field-error" role="alert" hidden></p><div class="confirm-actions"><button class="secondary-button" id="confirm-cancel">取消</button><button class="primary-button" id="confirm-accept">确认</button></div></dialog>
+    <div class="toast glass" id="toast" role="status" aria-live="polite"><span id="toast-message"></span><button id="toast-action" type="button" hidden>撤销</button></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

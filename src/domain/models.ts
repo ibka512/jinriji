@@ -1,5 +1,6 @@
 export type ItemKind = "note" | "task" | "event";
 export type ItemStatus = "open" | "completed" | "archived";
+export interface TaskRepeat { frequency: "daily" | "weekly" | "monthly"; anchorDate: string; timeZone: string }
 
 export interface Item {
   id: string;
@@ -12,6 +13,13 @@ export interface Item {
   startAt?: string;
   endAt?: string;
   allDay: boolean;
+  /** Calendar date for all-day entries; older records fall back to their timestamp. */
+  dateOnly?: string;
+  completedAt?: string;
+  pinned?: boolean;
+  tags?: string[];
+  repeat?: TaskRepeat;
+  repeatNextId?: string;
   reminderOffsets: number[];
   createdAt: string;
   updatedAt: string;
@@ -27,6 +35,8 @@ export interface Course {
   color?: string;
   termId?: string;
   firstMeetingAt?: string;
+  allDay?: boolean;
+  dateOnly?: string;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
@@ -41,6 +51,7 @@ export interface Term {
   timeZone: string;
   totalWeeks: number;
   isActive: boolean;
+  revision?: number;
 }
 
 export interface RecurrenceRule {
@@ -52,6 +63,9 @@ export interface RecurrenceRule {
   startWeek: number;
   endWeek: number;
   intervalWeeks: 1 | 2;
+  location?: string;
+  deletedAt?: string;
+  revision?: number;
 }
 
 export interface OccurrenceException {
@@ -62,6 +76,7 @@ export interface OccurrenceException {
   replacementStartAt?: string;
   replacementEndAt?: string;
   replacementLocation?: string;
+  revision?: number;
 }
 
 export interface AppSetting<T = unknown> {
@@ -96,3 +111,12 @@ export interface BackupPayloadV2 {
   items: Item[];
   courses: Course[];
 }
+
+export interface TimetableData {
+  terms: Term[];
+  recurrenceRules: RecurrenceRule[];
+  occurrenceExceptions: OccurrenceException[];
+}
+export interface BackupPayloadV3 extends Omit<BackupPayloadV2, "version">, TimetableData { version: 3 }
+export interface BackupPayloadV4 extends Omit<BackupPayloadV3, "version"> { version: 4 }
+export type BackupPayload = BackupPayloadV2 | BackupPayloadV3 | BackupPayloadV4;

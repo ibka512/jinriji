@@ -1,0 +1,39 @@
+/* v0.7: quiet organization controls, on the existing semantic palette. */
+.sidebar-foot { border-top:1px solid var(--line); padding:16px 14px 0; line-height:1.7; }
+.sidebar .nav-list { margin-bottom:32px; }
+.organization-filters, .organization-filters > div { display:flex; align-items:center; gap:8px; min-width:0; }
+.organization-filters { justify-content:space-between; margin:-8px 0 16px; }
+.organization-filters > div { flex:1; flex-wrap:wrap; }
+.organization-filters select { min-height:44px; max-width:100%; padding:8px 26px 8px 10px; border:1px solid var(--line); border-radius:var(--radius-control); background:var(--paper-solid); color:var(--ink-soft); font-size:.8125rem; }
+.organization-filters label { min-width:0; max-width:min(100%,220px); }
+.organization-filters button { flex:none; border-radius:var(--radius-control); }
+.organization-filters [aria-pressed="true"] { background:var(--selected-bg); color:var(--accent-deep); }
+.bulk-toolbar { padding:8px 14px; margin-bottom:18px; background:var(--paper-solid); }
+.bulk-summary, .bulk-actions { display:flex; align-items:center; gap:4px 12px; flex-wrap:wrap; }
+.bulk-summary { justify-content:space-between; font-size:.875rem; }
+.bulk-actions { border-top:1px solid var(--line); }
+.bulk-actions button:disabled { opacity:.45; cursor:default; }
+.bulk-toolbar .study-field { margin:12px 0; }
+.note-card { position:relative; }
+.record-pin { position:absolute; top:8px; right:8px; display:grid; place-items:center; width:44px; height:44px; border:0; border-radius:50%; color:var(--ink-soft); background:transparent; cursor:pointer; }
+.record-pin svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linejoin:round; stroke-linecap:round; }
+.record-pin.is-pinned { color:var(--accent-deep); }
+.record-pin.is-pinned svg { fill:currentColor; }
+.record-pin:hover { background:var(--control-hover); }
+.record-open > .eyebrow { padding-right:30px; }
+.record-tags { display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:12px; color:var(--ink-soft); font-size:.75rem; line-height:1.6; }
+.record-tags > span { overflow-wrap:anywhere; max-width:100%; }
+.record-pick { position:absolute; top:14px; right:14px; border:1px solid var(--control-edge); border-radius:50%; width:24px; height:24px; display:grid; place-items:center; font:500 .8125rem var(--sans); color:var(--accent-deep); }
+[aria-pressed="true"] > .record-pick { border-color:var(--accent-deep); background:var(--selected-bg); }
+.entry-organization { margin-top:16px; }
+.entry-organization summary, .keyboard-shortcuts summary { min-height:44px; padding:10px 0; color:var(--ink-soft); cursor:pointer; font-size:.875rem; }
+.entry-organization .study-field { margin:8px 0; }
+#entry-repeat-field { margin:16px 0 0; }
+.offline-banner { padding:12px 16px; border:1px solid var(--line); background:var(--paper-solid); border-radius:var(--radius-control); font-size:.8125rem; color:var(--ink-soft); margin:0 0 20px; }
+.keyboard-shortcuts dl { display:grid; grid-template-columns:max-content minmax(0,1fr); gap:14px; font-size:.8125rem; }
+.keyboard-shortcuts dt, .keyboard-shortcuts dd { margin:0; }
+.keyboard-shortcuts dd { color:var(--ink-soft); overflow-wrap:anywhere; }
+.keyboard-shortcuts kbd { font:.75rem var(--sans); border:1px solid var(--line); border-radius:5px; padding:3px 5px; }
+@media (min-width:1100px) { .app-shell:has(#view-notes.is-active.has-detail) { grid-template-columns:var(--sidebar-width) minmax(0,1fr); } }
+@media (max-width:1099px) { .view.has-detail > .organization-filters, .view.has-detail > .bulk-toolbar { display:none; } }
+@media (max-width:700px) { .organization-filters { margin-top:-6px; }.bulk-toolbar { padding-inline:12px; }.bulk-actions { gap:2px 8px; } }
