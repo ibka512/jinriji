@@ -123,14 +123,14 @@ def test_menu_and_modal_lifecycle(browser):
     nav(page, "plan"); page.get_by_role("tab", name="待办", exact=True).click()
     for _ in range(3):
         page.locator(".mobile-quick-add").click()
-        expect(page.locator("#compose-layer")).to_be_visible()
-        page.get_by_role("button", name="关闭编辑器").click()
-        expect(page.locator("#compose-layer")).not_to_be_visible()
+        expect(page.locator("#entry-editor-page")).to_be_visible()
+        page.get_by_role("button", name="返回计划").click()
+        expect(page.locator("#entry-editor-page")).not_to_be_visible()
         page.wait_for_function("() => !history.state?.jinrijiModal")
     page.emulate_media(reduced_motion="reduce")
     page.locator(".mobile-quick-add").click()
-    assert page.locator("#compose-layer").evaluate("e => getComputedStyle(e).transform") == "none"
-    page.get_by_role("button", name="关闭编辑器").click()
+    assert page.locator("#entry-editor-page").evaluate("e => getComputedStyle(e).transform") == "none"
+    page.get_by_role("button", name="返回计划").click()
     assert not errors, errors; context.close()
 
 

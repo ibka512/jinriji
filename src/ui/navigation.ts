@@ -59,7 +59,7 @@ export class Navigation {
     this.queue = this.queue.then(async () => {
       const next = parseRoute(hash); const normalized = routeHash(next);
       if (normalized === this.currentHash) {
-        if (fromHistory && document.querySelector("dialog[open]")) await this.dismissOverlay(true);
+        if (fromHistory && (document.querySelector("dialog[open]") || document.body.classList.contains("entry-writing"))) await this.dismissOverlay(true);
         return;
       }
       if (!await this.dismissOverlay(fromHistory)) {

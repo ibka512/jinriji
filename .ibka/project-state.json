@@ -4,11 +4,11 @@
   "goal": "实现并公开部署融合液态玻璃、莫奈动态配色与现代和风氛围的响应式便签、待办和课程表 Web 应用",
   "mode": "PROJECT",
   "status": "completed",
-  "current_module": "M26",
+  "current_module": "M29",
   "created_at": "2026-08-30T09:51:40.317602+00:00",
-  "updated_at": "2026-09-01T12:59:03+08:00",
-  "local_version": "1.0.0-rc.1",
-  "release_status": "v1.0.0-rc.1 已发布：提交 0d5b8b8 已推送 main；Quality checks #33471416830 与 GitHub Pages #33471416792 均通过；线上版本、构建缓存、图标、字体与 Service Worker 已复核。线上地址：https://ibka512.github.io/jinriji/。",
+  "updated_at": "2026-09-01T16:45:00+08:00",
+  "local_version": "1.0.0-rc.2",
+  "release_status": "v1.0.0-rc.2 本地候选已完成页面式事项编辑与 AI 开发接力入口，正在执行完整验证，尚未提交、推送或部署；线上仍为 v1.0.0-rc.1。线上地址：https://ibka512.github.io/jinriji/。",
   "constraints": [
     "公开 GitHub 仓库并使用 GitHub Pages 托管",
     "手机竖屏、平板与 Web 横屏自适应",
@@ -21,6 +21,10 @@
     "v1.0 RC 保留数据库 v3、备份 v6、旧数据读取和现有生产依赖；本地候选版完成后仍以真实 Safari、中文输入法、VoiceOver、低端设备及线上 CI 为正式版放行条件"
   ],
   "decisions": [
+    "M28 以根目录 AGENTS.md 作为开发代理机器入口，架构与工作流拆分到 docs；CI 与本地共用 scripts/browser-acceptance.mjs，避免维护两套浏览器套件清单",
+    "M28 新增 requirements-dev.txt 只固定 Playwright 开发依赖，不改变生产依赖；M29 递增为 1.0.0-rc.2 以隔离 Service Worker 缓存和发布证据",
+    "M27 采用 Redesign · Preserve：待办与日程改为无遮罩页面式文本编辑，课程保留专用结构化入口；不新增依赖、数据库字段或备份版本",
+    "M27 将日期、时间、重复、课程与标签收进原生“安排”披露区，返回时暂存草稿，保存时沿用现有冲突与校验契约",
     "v1.0 RC 采用 Redesign · Preserve：保留和纸、中文衬线、四套莫奈主题、胶囊导航与圆形新建，仅统一焦点、忙碌、长文顶栏和跨主题状态",
     "v1.0 RC 用 140/180/240ms 统一指针反馈、菜单和短表单；键盘、输入、撤销和减少动态即时或仅短透明度反馈，数据操作不等待动画",
     "v1.0 RC 的离线缓存名由版本和构建指纹隔离，失败更新继续使用旧缓存并保留显式重试；不新增生产依赖，完成验收后依用户指令提交并部署",
@@ -56,6 +60,10 @@
     "v0.7.1 采用用户提供的朱红圆相软件图标，保留原图并适配构图；提供 favicon、Apple Touch Icon 与 PWA 尺寸，不改变纯文字侧栏或用户数据"
   ],
   "outputs": [
+    "M28 AGENTS.md、CONTRIBUTING.md、docs/architecture.md、docs/development-workflow.md、Pull Request 模板及可复现浏览器验收命令",
+    "M29 v1.0.0-rc.2 版本、README/版本记录、CI 共用验收入口与候选发布",
+    "M27 页面式待办与日程编辑、移动全屏专注布局、桌面侧栏上下文及精简状态文案",
+    "M27 独立浏览器验收与浅色桌面、浅色手机、深色手机截图",
     "v1.0 RC 共享动效契约、通知生命周期、任务完成焦点、原生菜单与弹层降级及四主题状态收尾",
     "v1.0 RC 版本与构建指纹缓存、失败更新重试、实际 Service Worker 恢复演练及真机放行清单",
     "v1.0 RC 品牌规范、实现计划和 docs/v1.0-verification.md；本地版本 1.0.0-rc.1",
@@ -82,6 +90,10 @@
     "v0.7 完整 v4 备份与旧格式兼容、76 个单元测试、20 组浏览器流程及 41 张截图"
   ],
   "verifications": [
+    "M29 本地统一 npm run test:browser 通过 60 组：Chromium 51、WebKit 8、真实 Service Worker 更新 1；主 JS 660.05kB/gzip 208.31kB，保留既有体积提示",
+    "M28 新增 npm run test:browser:core 已从生产构建启动隔离服务，并通过核心 9 组与页面式事项 3 组流程",
+    "M27 TypeScript、14 个文件 112 项单元测试、生产构建与 git diff --check 通过；页面式编辑 3 组专项流程、Chromium RC 8 组、既有核心/课程/整理/写作/笔记工作区回归通过",
+    "M27 已验证桌面无固定窗口与遮罩、移动 Tab Bar 隐藏、深色控件可读、安排错误自动展开、浏览器返回草稿恢复及侧栏跳转无空白历史；未提交推送部署",
     "v1.0 RC 类型检查、14 个文件 112 项单元测试、生产构建和 git diff --check 通过；Chromium 49 组、WebKit 8 组，共 57 组浏览器流程通过",
     "v1.0 RC 63 张 Chromium 与 7 张 WebKit 截图；四主题深浅色最低对比度 5.43:1，320/768 宽度 200% 字号、320/1440 可访问名称与 44px 触控目标、强制颜色通过",
     "v1.0 RC 实际 Service Worker 下载失败、保留旧缓存、重试、激活、离线刷新及离线新增笔记通过；WebKit 自动化离线 reload 有引擎内部错误，真实 Safari/输入法/VoiceOver/低端设备仍待验证",
@@ -141,6 +153,9 @@
     {"id": "M23", "status": "completed"},
     {"id": "M24", "status": "completed"},
     {"id": "M25", "status": "completed"},
-    {"id": "M26", "status": "completed"}
+    {"id": "M26", "status": "completed"},
+    {"id": "M27", "status": "completed"},
+    {"id": "M28", "status": "completed"},
+    {"id": "M29", "status": "active"}
   ]
 }

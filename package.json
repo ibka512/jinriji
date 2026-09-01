@@ -1,6 +1,6 @@
 {
   "name": "jinriji",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,6 +8,9 @@
     "build": "npm run check && vite build && node scripts/licenses.mjs && node scripts/precache.mjs",
     "check": "tsc --noEmit",
     "test": "vitest run",
+    "test:browser": "npm run build && node scripts/browser-acceptance.mjs",
+    "test:browser:built": "node scripts/browser-acceptance.mjs",
+    "test:browser:core": "npm run build && node scripts/browser-acceptance.mjs --core",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {

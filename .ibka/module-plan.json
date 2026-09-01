@@ -224,6 +224,27 @@
       "expected_outputs": ["候选版自动化证据", "实际 Service Worker 演练", "真机放行清单", "本地 RC 预览"],
       "verification": "本地自动化通过；真实 Safari/输入法/VoiceOver/低端设备保留为正式版阻塞项",
       "status": "completed"
+    },
+    {
+      "id": "M27", "name": "页面式事项编辑", "owner": "web-design-engineer", "depends_on": ["M26"],
+      "objective": "移除待办与日程的居中窗口，将其改为与记录一致的沉浸式文本编辑页",
+      "expected_outputs": ["待办与日程页面编辑", "渐进安排信息", "多端深浅色布局", "返回与草稿保护"],
+      "verification": "类型、112 项单元测试、生产构建、专项页面流程及既有 Chromium 回归通过；不改变数据库、备份和生产依赖",
+      "status": "completed"
+    },
+    {
+      "id": "M28", "name": "AI 开发接力", "owner": "web-design-engineer", "depends_on": ["M27"],
+      "objective": "让新的开发代理只通过 GitHub 仓库即可发现架构、数据契约、命令、测试和发布边界",
+      "expected_outputs": ["AGENTS 入口", "架构与工作流文档", "贡献和 PR 模板", "一键浏览器验收"],
+      "verification": "全新命令入口可完成构建、隔离本地服务、核心及完整浏览器套件；CI 复用同一清单",
+      "status": "completed"
+    },
+    {
+      "id": "M29", "name": "v1.0 RC2 发布", "owner": "webapp-testing", "depends_on": ["M28"],
+      "objective": "完成本地全回归、提交推送、远程质量检查、GitHub Pages 部署和线上核对",
+      "expected_outputs": ["v1.0.0-rc.2", "main 提交", "远程 CI 与 Pages", "线上验证证据"],
+      "verification": "Quality checks 与 Pages 均成功，线上版本、编辑页、字体、图标和 Service Worker 接管通过",
+      "status": "active"
     }
   ]
 }

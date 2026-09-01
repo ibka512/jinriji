@@ -306,7 +306,7 @@ export class AppController {
     if (data.view || data.viewJump || target.matches("a.brand")) {
       event.preventDefault();
       const view = (data.view || data.viewJump || "today") as ViewName;
-      this.navigation.go({ view, ...(view === "plan" ? { tab: (data.jumpTab as PlanTab) || this.lastPlanTab } : {}) });
+      this.navigation.go({ view, ...(view === "plan" ? { tab: (data.jumpTab as PlanTab) || this.lastPlanTab } : {}) }, this.editor.isPage);
     }
     if (target.hasAttribute("data-open-compose")) {
       const type = data.composeType || (this.state.view === "plan" ? this.lastPlanTab === "courses" ? "course" : this.lastPlanTab === "week" ? "schedule" : "task" : "note");

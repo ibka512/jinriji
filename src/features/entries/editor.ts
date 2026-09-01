@@ -19,7 +19,8 @@ const typeNames: Record<ComposeType, string> = { note: "便签", task: "待办",
 
 export class EntryEditor {
   private readonly dialog = query<HTMLDialogElement>("#compose-layer");
-  private readonly page = query<HTMLElement>("#note-editor-page");
+  private readonly notePage = query<HTMLElement>("#note-editor-page");
+  private readonly entryPage = query<HTMLElement>("#entry-editor-page");
   private readonly notebook = query<HTMLSelectElement>("#entry-notebook");
   private notebooks: Notebook[] = [];
   onPageRequest?: (draft: Draft, recovered: boolean) => void;
@@ -69,8 +70,9 @@ export class EntryEditor {
   }
 
   get isOpen(): boolean { return this.dialog.open || this.isPage; }
-  get isPage(): boolean { return !this.page.hidden; }
+  get isPage(): boolean { return !this.notePage.hidden || !this.entryPage.hidden; }
   private get rich(): boolean { return this.current?.type === "note" || Boolean(this.current?.document); }
+  private get page(): HTMLElement { return !this.notePage.hidden ? this.notePage : this.entryPage; }
   private get surface(): HTMLElement { return this.isPage ? this.page : this.dialog; }
   private get scroll(): number { return this.isPage ? window.scrollY : query<HTMLElement>(".editor-fields").scrollTop; }
   setCourses(courses: Course[]): void { this.courses = courses; }
@@ -159,16 +161,28 @@ export class EntryEditor {
   open(draft: Draft, recovered = true, fromRoute = false): void {
     if (draft.type === "note" && !fromRoute && this.onPageRequest) { this.onPageRequest(draft, recovered); return; }
     if (document.querySelector("dialog[open]")) return;
+    const pageEditor = draft.type !== "course";
+    if (pageEditor) {
+      const page = draft.type === "note" ? this.notePage : this.entryPage;
+      page.append(...Array.from(this.dialog.childNodes)); page.hidden = false;
+      page.setAttribute("aria-label", `${typeNames[draft.type]}编辑`);
+      page.dataset.entryKind = draft.type;
+      query(".compose-head").append(query(".editor-footer"));
+      query("#save-entry").setAttribute("form", "entry-form");
+      const back = query<HTMLElement>("[data-close-compose]", page);
+      back.setAttribute("aria-label", `返回${draft.type === "note" ? "记录" : "计划"}`);
+      back.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>';
+    }
     if (draft.type === "note") {
-      this.page.append(...Array.from(this.dialog.childNodes)); this.page.hidden = false;
       document.body.classList.add("note-writing"); query("#view-notes").classList.add("has-detail");
       query(".records-workspace").classList.add("has-detail");
       query<HTMLElement>("#entry-detail").hidden = true;
       query("#entry-organization").append(this.courseField.closest("label")!);
-      query(".compose-head").append(query(".editor-footer"));
-      query("#save-entry").setAttribute("form", "entry-form");
-      const back = query<HTMLElement>("[data-close-compose]", this.page);
-      back.setAttribute("aria-label", "返回记录"); back.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>';
+    } else if (pageEditor) {
+      document.body.classList.add("entry-writing");
+      const organization = query<HTMLElement>("#entry-organization");
+      organization.querySelector("summary")!.after(query("#entry-details"), query("#entry-repeat-field"), this.courseField.closest("label")!);
+      history.pushState({ ...history.state, jinrijiModal: "editor" }, "", location.href);
     }
     this.sourceKey = recovered ? draft.key : undefined;
     this.current = { ...draft, key: `session:${crypto.randomUUID()}`, id: draft.id || crypto.randomUUID() };
@@ -216,7 +230,8 @@ export class EntryEditor {
     const editing = this.current.revision !== undefined;
     query("#compose-title").textContent = `${editing ? "编辑" : "新建"}${typeNames[this.current.type]}`;
     query("#entry-title-label").textContent = course ? "课程名称" : "标题（选填）";
-    this.title.placeholder = course ? "课程名称" : "取一个标题";
+    this.title.placeholder = course ? "课程名称" : this.current.type === "task" ? "要做什么？" : this.current.type === "schedule" ? "日程标题" : "取一个标题";
+    this.body.placeholder = this.current.type === "task" ? "写下步骤、想法或补充说明…" : this.current.type === "schedule" ? "写下日程内容…" : "写点什么…";
     const note = this.current.type === "note";
     if (note && this.writer.text !== this.body.value) this.writer.setDocument(this.current.document && this.current.body === this.body.value ? this.current.document : textDocument(this.body.value));
     this.body.hidden = course || this.rich;
@@ -226,13 +241,14 @@ export class EntryEditor {
     query<HTMLElement>("#entry-body-label").hidden = course || this.rich;
     this.date.required = this.current.type === "schedule";
     this.date.setAttribute("aria-required", String(this.date.required));
-    query("#save-entry").textContent = note ? "完成" : "保存记录";
+    query("#save-entry").textContent = note ? "完成" : "保存";
+    query("#discard-draft").textContent = note ? "舍弃草稿" : "舍弃";
     query<HTMLElement>("#discard-draft").hidden = note;
     query<HTMLElement>("#entry-details").hidden = this.current.type === "note" || (course && Boolean(this.courses.find(value => value.id === this.current?.id)?.termId));
     query<HTMLElement>("#course-metadata").hidden = !course;
     query<HTMLElement>("#entry-organization").hidden = course;
     query<HTMLElement>("#entry-notebook-field").hidden = !note;
-    query("#entry-organization summary").textContent = note ? "笔记信息" : "标签";
+    query("#entry-organization summary").textContent = note ? "笔记信息" : "安排";
     query<HTMLElement>("#entry-repeat-field").hidden = this.current.type !== "task";
     query<HTMLElement>("#entry-course-field").hidden = course || (!this.courses.length && !this.current.courseId);
     queryAll<HTMLButtonElement>("[data-entry-type]").forEach(button => {
@@ -253,7 +269,7 @@ export class EntryEditor {
         await this.drafts.save(this.current);
         if (this.sourceKey) { await this.drafts.remove(this.sourceKey); this.sourceKey = undefined; }
         this.draftBaseline = contents;
-        if (this.current.type !== "note") query("#draft-status").textContent = "草稿已暂存";
+        if (this.current.type !== "note") query("#draft-status").textContent = "已暂存";
       }
       this.storageFailed = false;
       return true;
@@ -274,13 +290,16 @@ export class EntryEditor {
   async leavePage(): Promise<boolean> {
     if (!this.isPage) return true;
     if (this.busy || this.writer.isComposing || this.writer.isWorking) { showToast("请完成当前输入后再切换"); return false; }
-    await this.saveNote(false);
-    if (this.storageFailed || this.current && this.contents() !== this.baseline && (this.title.value.trim() || this.writer.text.trim())) return false;
+    if (this.current?.type === "note") {
+      await this.saveNote(false);
+      if (this.storageFailed || this.current && this.contents() !== this.baseline && (this.title.value.trim() || this.writer.text.trim())) return false;
+    } else if (!await this.flush()) return false;
     this.finishClose(true); return true;
   }
 
   private finishClose(fromHistory = false): void {
-    const page = this.isPage;
+    const page = this.isPage ? this.page : undefined;
+    const notePage = page === this.notePage;
     this.dialog.close(); document.body.classList.remove("editor-open");
     window.clearTimeout(this.timer); this.writer.unmount();
     query("#compose-layer").classList.remove("is-focused");
@@ -288,14 +307,15 @@ export class EntryEditor {
     this.current = undefined; this.storageFailed = false;
     if (page) {
       query("#entry-form").append(query(".editor-footer"));
-      this.dialog.append(...Array.from(this.page.childNodes)); this.page.hidden = true;
-      document.body.classList.remove("note-writing", "writing-focus");
-      query("#entry-repeat-field").before(this.courseField.closest("label")!);
+      this.dialog.append(...Array.from(page.childNodes)); page.hidden = true;
+      delete page.dataset.entryKind;
+      document.body.classList.remove("note-writing", "entry-writing", "writing-focus");
+      query("#entry-organization").before(query("#entry-details"), this.courseField.closest("label")!, query("#entry-repeat-field"));
       const close = query<HTMLElement>("[data-close-compose]", this.dialog);
       close.setAttribute("aria-label", "关闭编辑器"); close.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
     }
     this.onDraftChange();
-    if (!page && !fromHistory && history.state?.jinrijiModal === "editor") history.back();
+    if ((!page || !notePage) && !fromHistory && history.state?.jinrijiModal === "editor") history.back();
   }
 
   private error(message: string): void {
@@ -321,7 +341,7 @@ export class EntryEditor {
   private changed(): void {
     if (!this.current || !this.isOpen || this.busy) return;
     window.clearTimeout(this.timer);
-    query("#draft-status").textContent = this.conflict ? "尚未保存 · 有冲突" : "尚未保存";
+    query("#draft-status").textContent = this.conflict ? "未保存 · 有冲突" : this.current.type === "note" ? "尚未保存" : "未保存";
     if (this.writer.isComposing) return;
     this.timer = window.setTimeout(() => { if (!this.conflict) void this.flush(); }, 600);
   }
@@ -468,10 +488,14 @@ export class EntryEditor {
       if (this.current.type === "schedule" && !this.date.value) throw new Error("请选择日程日期；没有日期的事项可以记为待办");
       if (this.current.type === "task" && this.repeat.value && !this.date.value) throw new Error("重复待办需要先选择日期");
     }
-    catch (cause) { this.error((cause as Error).message); this.date.focus(); return; }
+    catch (cause) {
+      this.error((cause as Error).message);
+      query<HTMLDetailsElement>("#entry-organization").open = true;
+      this.date.focus(); return;
+    }
     const title = typedTitle || body.split(/\r?\n/)[0]!.slice(0, 120);
     this.busy = true;
-    const controls = queryAll<HTMLInputElement | HTMLButtonElement | HTMLTextAreaElement | HTMLSelectElement>("button, input, textarea, select", this.dialog);
+    const controls = queryAll<HTMLInputElement | HTMLButtonElement | HTMLTextAreaElement | HTMLSelectElement>("button, input, textarea, select", this.surface);
     controls.forEach(control => control.disabled = true);
     const saveButton = query<HTMLButtonElement>("#save-entry");
     saveButton.textContent = "保存中…"; saveButton.setAttribute("aria-busy", "true");
@@ -507,7 +531,7 @@ export class EntryEditor {
     } finally {
       this.busy = false;
       controls.forEach(control => control.disabled = false);
-      saveButton.textContent = "保存记录"; saveButton.removeAttribute("aria-busy");
+      saveButton.textContent = "保存"; saveButton.removeAttribute("aria-busy");
     }
     if (saved) {
       try { await this.onSaved(saved); }

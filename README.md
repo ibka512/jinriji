@@ -10,6 +10,7 @@
   <a href="https://ibka512.github.io/jinriji/"><strong>在线使用</strong></a> ·
   <a href="#开始使用">开始使用</a> ·
   <a href="#本地开发">本地开发</a> ·
+  <a href="./AGENTS.md">AI 接力开发</a> ·
   <a href="./docs/version-history.md">更新记录</a> ·
   <a href="https://github.com/ibka512/jinriji/issues">反馈问题</a>
 </p>
@@ -17,7 +18,7 @@
 <p align="center">
   <a href="https://github.com/ibka512/jinriji/actions/workflows/ci.yml"><img src="https://github.com/ibka512/jinriji/actions/workflows/ci.yml/badge.svg" alt="Quality checks" /></a>
   <a href="https://github.com/ibka512/jinriji/actions/workflows/pages.yml"><img src="https://github.com/ibka512/jinriji/actions/workflows/pages.yml/badge.svg" alt="GitHub Pages" /></a>
-  <img src="https://img.shields.io/badge/version-0.10.0-667b68" alt="版本 0.10.0" />
+  <img src="https://img.shields.io/badge/version-1.0.0--rc.2-667b68" alt="版本 1.0.0-rc.2" />
 </p>
 
 今日记是一款将便签、备忘录、待办、日程与课程表放在一起的个人工具。无需注册，打开浏览器就能开始；记录保存在当前设备的浏览器中，也可以安装到主屏幕使用。
@@ -66,7 +67,11 @@
 
 此次没有新增生产依赖或升级数据库，相关改进已随 v1.0 RC 部署。验证范围与真机边界见 [v0.10 验证记录](./docs/v0.10-verification.md)。
 
-### v1.0 RC：正式版候选体验（已部署，待真机验收）
+### v1.0 RC：正式版候选体验
+
+- RC2 将待办与日程从居中窗口改为页面式文本编辑：桌面保留导航上下文，手机进入全屏专注；日期、时间、重复、课程和标签渐进收进“安排”。
+- 返回、刷新、侧栏跳转和浏览器历史继续保护草稿，日程日期错误会自动展开对应控件；课程仍使用专门的结构化入口。
+- 仓库增加 `AGENTS.md`、架构和开发流程、一键浏览器验收及 Pull Request 模板，新的开发代理可以从 GitHub 克隆后按明确契约继续工作。
 
 - 交互动效统一到同一套 140／180／240ms 节奏：键盘、输入与撤销即时，菜单、通知和短表单只在帮助理解状态时过渡。
 - 待办完成后焦点前往下一个可处理事项；通知可主动关闭、悬停或聚焦时暂停，关闭后退出键盘顺序并返回合理位置。
@@ -74,7 +79,7 @@
 - 四套主题的深浅色正文、辅助文字和主按钮对比度均达到 4.5:1；补齐透明度、增强对比度、强制颜色、减少动态和触摸悬停降级。
 - 离线缓存按应用版本和构建指纹隔离；更新下载失败保留当前版本与数据，重试成功后再激活。
 
-当前是 `1.0.0-rc.1`，不等于已正式发布。真实 iPhone／Safari、Android 输入法和 VoiceOver 仍需设备验收，见 [v1.0 候选版验证记录](./docs/v1.0-verification.md)。
+当前是 `1.0.0-rc.2`，不等于已正式发布。真实 iPhone／Safari、Android 输入法和 VoiceOver 仍需设备验收，见 [v1.0 候选版验证记录](./docs/v1.0-verification.md)。
 
 ### 页面式写作与笔记整理
 
@@ -167,6 +172,8 @@ npm ci
 npm run dev
 ```
 
+使用 nvm 时可先运行 `nvm use`，仓库根目录的 `.nvmrc` 会选择 Node.js 24。
+
 访问终端显示的 Vite 地址，默认是 `http://localhost:5173`。开发模式不注册 Service Worker，避免旧缓存影响热更新。
 
 ```bash
@@ -174,6 +181,8 @@ npm run check   # TypeScript 类型检查
 npm test        # 单元测试
 npm run build   # 类型检查、生产构建与离线资源清单
 npm run preview # 预览 dist/，默认端口 4173
+npm run test:browser:core # 构建并运行核心浏览器流程
+npm run test:browser      # 构建并运行完整 Chromium/WebKit/PWA 验收
 ```
 
 技术栈为 **TypeScript + Vite + 原生 HTML/CSS + Dexie + Tiptap / ProseMirror**，无需后端服务。Tiptap 使用 MIT 开源组件，无商业扩展或编辑服务。主要目录：
@@ -191,6 +200,13 @@ tests/          单元测试和浏览器验收
 docs/           界面预览、图标母版和历史说明
 ```
 
+继续开发前请先阅读：
+
+- [AGENTS.md](./AGENTS.md)：开发代理的首要入口、不可破坏契约和代码地图；
+- [架构说明](./docs/architecture.md)：启动、分层、数据、编辑器、排课、备份和 PWA；
+- [开发与验证流程](./docs/development-workflow.md)：环境、一键验收、数据变更和发布清单；
+- [贡献指南](./CONTRIBUTING.md)：Issue、Pull Request 和隐私要求。
+
 ### 浏览器验收
 
 验收脚本使用隔离的 Chromium 浏览器数据，只允许对本地站点运行。首次运行需准备 Python 3 和 Playwright：
@@ -198,7 +214,7 @@ docs/           界面预览、图标母版和历史说明
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python3 -m pip install playwright==1.55.0
+python3 -m pip install -r requirements-dev.txt
 python3 -m playwright install chromium
 npm run build
 python3 -m http.server 4173 --bind 127.0.0.1 --directory dist
@@ -213,7 +229,10 @@ python3 tests/organization_acceptance.py
 python3 tests/writing_acceptance.py
 python3 tests/library_acceptance.py
 python3 tests/maturity_acceptance.py
+python3 tests/editor_page_acceptance.py
 ```
+
+也可以在完成 Python 和浏览器安装后直接执行 `npm run test:browser`；脚本会构建站点、启动隔离的本地生产服务并依次运行全部套件。
 
 验收脚本覆盖记录、课程、整理、页面式写作、笔记本与模板、跨篇链接、选段待办、图片表格、备份、离线、实际更新安装及多标签页冲突，也检查多端尺寸、深色模式、减少动态与大字号。写作专项包含模拟中文组合输入、真实 IndexedDB 锁下连续输入、保存失败恢复及 1 万／5 万／20 万字符边界。v1.0 候选版截图输出到 `test-results/screenshots-v1.0/` 与 `test-results/screenshots-v1.0-webkit/`。WebKit 自动化不等于真实 Safari，这些结果也不等同于真实手机或输入法验证。
 

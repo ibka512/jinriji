@@ -45,9 +45,7 @@ def begin_compose(page, kind="note"):
         page.keyboard.press("Control+k")
     else:
         page.locator("#view-plan .page-header [data-open-compose]:visible, .mobile-quick-add:visible").click()
-    expect(page.locator("#note-editor-page" if kind == "note" else "#study-dialog" if kind == "course" else "#compose-layer")).to_be_visible()
-    if kind not in ("note", "course"):
-        page.locator(f"[data-entry-type='{kind}']").click()
+    expect(page.locator("#note-editor-page" if kind == "note" else "#study-dialog" if kind == "course" else "#entry-editor-page")).to_be_visible()
 
 
 def compose(page, text, kind="note", title="", date="", time=""):
@@ -67,6 +65,7 @@ def compose(page, text, kind="note", title="", date="", time=""):
     if kind != "course":
         page.locator("#quick-entry:visible, .tiptap:visible").fill(text)
     if kind != "note":
+        page.locator("#entry-organization summary").click()
         page.locator("#entry-date").fill(date)
         page.locator("#entry-time").fill(time)
     save(page)
@@ -76,6 +75,7 @@ def save(page):
     page.locator("#save-entry").click()
     expect(page.locator("#compose-layer")).not_to_be_visible()
     expect(page.locator("#note-editor-page")).not_to_be_visible()
+    expect(page.locator("#entry-editor-page")).not_to_be_visible()
     page.wait_for_function("() => !history.state?.jinrijiModal")
     page.wait_for_function("() => !location.hash.endsWith('/edit') && !location.hash.startsWith('#notes/new/')")
 
@@ -132,8 +132,8 @@ def test_drafts(browser):
     context, page, errors = context_page(browser, 390, 844)
     begin_compose(page, "task")
     page.locator("#quick-entry:visible, .tiptap:visible").fill("手机端未写完的草稿")
-    expect(page.locator("#draft-status")).to_have_text("草稿已暂存")
-    page.get_by_role("button", name="关闭编辑器").click()
+    expect(page.locator("#draft-status")).to_have_text("已暂存")
+    page.get_by_role("button", name="返回计划").click()
     expect(page.locator("#draft-banner")).to_be_visible()
     page.reload(); ready(page)
     page.locator("#resume-draft").click()
@@ -151,6 +151,8 @@ def test_drafts(browser):
     page.locator("#notes-list .record-open").click()
     page.get_by_role("button", name="编辑", exact=True).click()
     page.locator("#quick-entry:visible, .tiptap:visible").fill("不想保存的修改")
+    if page.locator("#toast-dismiss:visible").count():
+        page.locator("#toast-dismiss").click()
     page.locator("#discard-draft").click()
     page.locator("#confirm-cancel").click()
     expect(page.locator("#quick-entry:visible, .tiptap:visible")).to_have_value("不想保存的修改")
@@ -307,7 +309,7 @@ def test_failures_and_keyboard(browser):
     expect(page.locator("#entry-error")).to_contain_text("请输入")
     expect(page.locator("#quick-entry:visible, .tiptap:visible")).to_be_focused()
     page.locator("#quick-entry:visible, .tiptap:visible").fill("失败后仍保留输入")
-    page.locator("[data-entry-type='task']").click()
+    page.locator("#entry-organization summary").click()
     page.locator("#entry-time").fill("10:00")
     page.locator("#save-entry").click()
     expect(page.locator("#entry-error")).to_contain_text("先选择日期")
