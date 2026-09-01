@@ -1,6 +1,8 @@
 import type { OccurrenceException, RecurrenceRule, Term } from "../domain/models";
 import { ruleDates, validateException, validateRule, validateTerm } from "../domain/timetable";
 import type { JinrijiDatabase } from "./database";
+import { AppRepository, type CreateCourseInput } from "./repositories";
+import type { Course } from "../domain/models";
 
 function revision(current: { revision?: number } | undefined, expected: number): void {
   if ((current?.revision ?? 0) !== expected) throw new Error("安排已在其他页面变动，请关闭后重新打开；输入仍保留");
@@ -8,6 +10,18 @@ function revision(current: { revision?: number } | undefined, expected: number):
 
 export class TimetableRepository {
   constructor(private readonly database: JinrijiDatabase) {}
+
+  async createCourse(input: CreateCourseInput, rule?: RecurrenceRule, term?: Term): Promise<Course> {
+    return this.database.transaction("rw", [this.database.courses, this.database.terms, this.database.recurrenceRules, this.database.occurrenceExceptions], async () => {
+      if (!input.name.trim()) throw new Error("请输入课程名称");
+      const course = await new AppRepository(this.database).createCourse(input, rule?.courseId);
+      if (rule) {
+        if (!term) throw new Error("请选择学期");
+        await this.saveRule(rule, term.id, 0, course.revision, term.revision ?? 0);
+      }
+      return (await this.database.courses.get(course.id))!;
+    });
+  }
 
   async saveTerm(term: Term, expected = 0): Promise<void> {
     validateTerm(term);

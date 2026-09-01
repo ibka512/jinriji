@@ -23,7 +23,7 @@ export class EntryEditor {
   private readonly notebook = query<HTMLSelectElement>("#entry-notebook");
   private notebooks: Notebook[] = [];
   onPageRequest?: (draft: Draft, recovered: boolean) => void;
-  onPageDone?: (id?: string) => void;
+  onPageDone?: (id?: string, scroll?: number) => void;
   onNoteCommitted?: (item: Item) => void;
   private readonly title = query<HTMLInputElement>("#entry-title");
   private readonly body = query<HTMLTextAreaElement>("#quick-entry");
@@ -54,6 +54,12 @@ export class EntryEditor {
     this.writer.onImage = async file => {
       const asset = await prepareImage(file); await library.addAsset(asset); cacheImages([asset]); return asset.id;
     };
+    this.writer.onBackup = async () => {
+      if (this.current?.type !== "note" && this.contents() !== this.baseline) throw new Error("请先保存记录，再导出完整备份");
+      if (this.pending) await this.pending;
+      if (!await this.flush()) throw new Error("请先保存当前内容，再导出完整备份");
+      query<HTMLButtonElement>("#export-data").click();
+    };
     this.writer.onSelectionTask = async text => {
       if (this.pending) await this.pending;
       if (!await this.flush() || !this.current?.revision) throw new Error("请先保存笔记，再创建待办");
@@ -64,6 +70,7 @@ export class EntryEditor {
 
   get isOpen(): boolean { return this.dialog.open || this.isPage; }
   get isPage(): boolean { return !this.page.hidden; }
+  private get rich(): boolean { return this.current?.type === "note" || Boolean(this.current?.document); }
   private get surface(): HTMLElement { return this.isPage ? this.page : this.dialog; }
   private get scroll(): number { return this.isPage ? window.scrollY : query<HTMLElement>(".editor-fields").scrollTop; }
   setCourses(courses: Course[]): void { this.courses = courses; }
@@ -78,6 +85,10 @@ export class EntryEditor {
     window.visualViewport?.addEventListener("resize", updateViewport);
     window.visualViewport?.addEventListener("scroll", updateViewport);
     updateViewport();
+    const head = query<HTMLElement>(".compose-head");
+    new ResizeObserver(() => {
+      if (this.isPage) this.page.style.setProperty("--writer-header-height", `${head.getBoundingClientRect().height}px`);
+    }).observe(head);
     query("#entry-form").addEventListener("submit", event => { event.preventDefault(); void this.save(); });
     queryAll("[data-close-compose]").forEach(button => button.addEventListener("click", () => this.close()));
     this.dialog.addEventListener("cancel", event => { event.preventDefault(); this.close(); });
@@ -86,7 +97,10 @@ export class EntryEditor {
       if (event.key !== "Escape" || event.isComposing || this.writer.isComposing || query<HTMLDialogElement>("#confirm-dialog").open) return;
       event.preventDefault(); event.stopPropagation();
       const panel = this.surface.querySelector<HTMLElement>(".writer-link:not([hidden]),.writer-find:not([hidden]),.writer-insert:not([hidden])");
-      if (panel) { panel.hidden = true; this.writer.focus(); } else void this.close();
+      const more = this.surface.querySelector<HTMLDetailsElement>(".writer-more[open]");
+      if (panel) { panel.hidden = true; this.writer.focus(); }
+      else if (more) { more.open = false; more.querySelector<HTMLElement>("summary")?.focus(); }
+      else void this.close();
     }, true);
     for (const input of [this.title, this.body, this.date, this.time, this.courseField, this.instructor, this.location, this.tags, this.repeat, this.notebook]) input.addEventListener("input", () => this.changed());
     this.repeat.addEventListener("change", () => { query<HTMLElement>("#repeat-hint").hidden = !this.repeat.value; this.changed(); });
@@ -95,7 +109,7 @@ export class EntryEditor {
       if (this.current.type === "note") { this.current.document = this.writer.document; this.current.body = this.writer.text; this.body.value = this.writer.text; }
       this.current.type = button.dataset.entryType as ComposeType;
       if (this.current.type === "note" && !this.isPage) {
-        const draft = { ...this.snapshot(), type: "note" as const, body: this.body.value, document: textDocument(this.body.value) };
+        const draft = { ...this.snapshot(), type: "note" as const, body: this.body.value, document: this.current.document || textDocument(this.body.value) };
         this.finishClose(true); history.replaceState({ jinriji: true }, "", location.href);
         this.open(draft, true); return;
       }
@@ -127,13 +141,14 @@ export class EntryEditor {
     this.open(draft ?? { key: "new", id: crypto.randomUUID(), type, title: "", body: "", date, time: "", courseId, updatedAt: new Date().toISOString() }, Boolean(draft));
   }
 
-  async openRecord(record: Item | Course, fromRoute = false): Promise<void> {
+  async openRecord(record: Item | Course, fromRoute = false, readScroll?: number): Promise<void> {
     const item = "kind" in record ? record : undefined;
     const course = !item ? record as Course : undefined;
     const entity = item ? "item" : "course";
     const key = `${entity}:${record.id}`;
     const draft = await this.drafts.get(key);
     const position = item ? await this.writing.position(record.id).catch(() => ({})) : {};
+    if (readScroll !== undefined) Object.assign(position, { scroll: readScroll });
     const fields = dateFields(item ? itemTime(item) : course!.firstMeetingAt, record.allDay, record.dateOnly);
     this.open(draft ?? { key, entity, id: record.id, revision: record.revision, type: item ? item.kind === "event" ? "schedule" : item.kind : "course",
       title: item ? item.title === item.body ? "" : item.title : course!.name, body: item?.body ?? "", document: item?.document, notebookId: item?.notebookId, ...position, courseId: item?.courseId, location: course?.location, instructor: course?.instructor,
@@ -175,14 +190,14 @@ export class EntryEditor {
     this.storageFailed = false;
     query<HTMLElement>("#entry-error").hidden = true;
     query<HTMLElement>("#save-as-new").hidden = true;
-    query("#draft-status").textContent = recovered ? "已恢复草稿" : "";
+    query("#draft-status").textContent = recovered ? "已恢复草稿" : draft.revision !== undefined && draft.type === "note" ? "已保存到本机" : "";
     this.updateType();
     if (!this.isPage) {
       history.pushState({ ...history.state, jinrijiModal: "editor" }, "", location.href);
       this.dialog.showModal(); document.body.classList.add("editor-open");
       query<HTMLElement>(".editor-fields").scrollTop = draft.scroll || 0;
     } else window.scrollTo({ top: draft.scroll || 0, behavior: "instant" });
-    if (draft.type === "note") this.writer.focus(); else if (draft.type === "course") this.title.focus(); else {
+    if (this.rich) this.writer.focus(); else if (draft.type === "course") this.title.focus(); else {
       this.body.focus();
       this.body.setSelectionRange(0, 0);
       this.body.scrollTop = 0;
@@ -191,7 +206,7 @@ export class EntryEditor {
   }
 
   private contents(): string {
-    return JSON.stringify({ notebookId: this.notebook.value, type: this.current?.type, title: this.title.value, body: this.current?.type === "note" ? this.writer.text : this.body.value, document: this.current?.type === "note" ? this.writer.document : undefined, date: this.date.value, time: this.time.value, courseId: this.courseField.value, instructor: this.instructor.value, location: this.location.value, tagsText: this.tags.value, repeatFrequency: this.repeat.value });
+    return JSON.stringify({ notebookId: this.notebook.value, type: this.current?.type, title: this.title.value, body: this.rich ? this.writer.text : this.body.value, document: this.rich ? this.writer.document : undefined, date: this.date.value, time: this.time.value, courseId: this.courseField.value, instructor: this.instructor.value, location: this.location.value, tagsText: this.tags.value, repeatFrequency: this.repeat.value });
   }
 
   private updateType(): void {
@@ -204,9 +219,13 @@ export class EntryEditor {
     this.title.placeholder = course ? "课程名称" : "取一个标题";
     const note = this.current.type === "note";
     if (note && this.writer.text !== this.body.value) this.writer.setDocument(this.current.document && this.current.body === this.body.value ? this.current.document : textDocument(this.body.value));
-    this.body.hidden = course || note;
-    this.writer.root.hidden = !note;
-    query<HTMLElement>("#entry-body-label").hidden = course || note;
+    this.body.hidden = course || this.rich;
+    this.writer.root.hidden = !this.rich;
+    query<HTMLElement>('[data-write="selection-task"]').hidden = !note;
+    query<HTMLElement>('[data-write="history"]').hidden = !note;
+    query<HTMLElement>("#entry-body-label").hidden = course || this.rich;
+    this.date.required = this.current.type === "schedule";
+    this.date.setAttribute("aria-required", String(this.date.required));
     query("#save-entry").textContent = note ? "完成" : "保存记录";
     query<HTMLElement>("#discard-draft").hidden = note;
     query<HTMLElement>("#entry-details").hidden = this.current.type === "note" || (course && Boolean(this.courses.find(value => value.id === this.current?.id)?.termId));
@@ -220,7 +239,7 @@ export class EntryEditor {
       const active = button.dataset.entryType === this.current!.type;
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-pressed", String(active));
-      button.hidden = editing && (course ? button.dataset.entryType !== "course" : button.dataset.entryType === "course");
+      button.hidden = editing && button.dataset.entryType !== this.current!.type;
     });
   }
 
@@ -292,9 +311,8 @@ export class EntryEditor {
   }
 
   private snapshot(): Draft {
-    const note = this.current!.type === "note";
-    return { ...this.current!, title: this.title.value, body: note ? this.writer.text : this.body.value,
-      document: note ? this.writer.document : undefined, notebookId: this.notebook.value || undefined, cursor: this.writer.cursor, scroll: this.scroll,
+    return { ...this.current!, title: this.title.value, body: this.rich ? this.writer.text : this.body.value,
+      document: this.rich ? this.writer.document : undefined, notebookId: this.notebook.value || undefined, cursor: this.writer.cursor, scroll: this.scroll,
       date: this.date.value, time: this.time.value, courseId: this.courseField.value || undefined,
       instructor: this.instructor.value, location: this.location.value, tagsText: this.tags.value,
       repeatFrequency: this.repeat.value as Draft["repeatFrequency"], updatedAt: new Date().toISOString() };
@@ -382,9 +400,10 @@ export class EntryEditor {
       if (saved) await this.writing.remember(id, this.writer.cursor, this.scroll).catch(() => undefined);
       if (close) {
         const page = this.isPage;
+        const scroll = this.scroll;
         this.finishClose();
         if (saved) await this.onSaved({ entity: "item", id });
-        if (page) this.onPageDone?.(saved ? id : undefined);
+        if (page) this.onPageDone?.(saved ? id : undefined, scroll);
       }
     } catch { this.error("刷新失败，内容仍保留。请重试或导出正文。"); }
     finally { this.busy = false; controls.forEach(control => control.disabled = false); this.writer.setBusy(false); }
@@ -430,7 +449,7 @@ export class EntryEditor {
       await this.saveNote(true, asNew); return;
     }
     if (this.busy || !this.current) return;
-    const body = this.body.value.trim();
+    const body = (this.rich ? this.writer.text : this.body.value).trim();
     const typedTitle = this.title.value.trim();
     const course = this.current.type === "course";
     if (!(course ? typedTitle || body : body || typedTitle)) {
@@ -446,6 +465,7 @@ export class EntryEditor {
     }
     try {
       schedule = parseSchedule(this.date.value, this.time.value);
+      if (this.current.type === "schedule" && !this.date.value) throw new Error("请选择日程日期；没有日期的事项可以记为待办");
       if (this.current.type === "task" && this.repeat.value && !this.date.value) throw new Error("重复待办需要先选择日期");
     }
     catch (cause) { this.error((cause as Error).message); this.date.focus(); return; }
@@ -471,7 +491,7 @@ export class EntryEditor {
         const frequency = this.repeat.value as NonNullable<Item["repeat"]>["frequency"];
         const repeat = kind === "task" && frequency ? this.current.repeat?.frequency === frequency && this.date.value === this.current.repeatSourceDate && !asNew
           ? this.current.repeat : { frequency, anchorDate: this.date.value, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone } : undefined;
-        const values = { title, body: body || typedTitle, kind, dueAt: kind === "task" ? schedule.at : undefined,
+        const values = { title, body: body || typedTitle, document: this.rich ? this.writer.document : undefined, kind, dueAt: kind === "task" ? schedule.at : undefined,
           startAt: kind === "event" ? schedule.at : undefined, allDay: schedule.allDay, dateOnly: schedule.dateOnly, courseId: this.courseField.value || undefined, tags, repeat };
         const result = editing ? await this.repository.updateItem(id!, values, this.current.revision) : await this.repository.createItem(values, id);
         if (!result) throw new Error("原记录已不存在，请另存为新记录");

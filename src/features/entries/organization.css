@@ -19,7 +19,6 @@
 .record-pin svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linejoin:round; stroke-linecap:round; }
 .record-pin.is-pinned { color:var(--accent-deep); }
 .record-pin.is-pinned svg { fill:currentColor; }
-.record-pin:hover { background:var(--control-hover); }
 .record-open > .eyebrow { padding-right:30px; }
 .record-tags { display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:12px; color:var(--ink-soft); font-size:.75rem; line-height:1.6; }
 .record-tags > span { overflow-wrap:anywhere; max-width:100%; }

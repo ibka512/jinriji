@@ -11,20 +11,21 @@ export class LibraryController {
   private editing?: Notebook;
   private busy = false;
   constructor(private readonly repository: LibraryRepository, private readonly books: () => Notebook[],
-    private readonly options: RenderOptions, private readonly refresh: () => Promise<void>, private readonly open: (draft: Draft) => void) {}
+    private readonly options: RenderOptions, private readonly refresh: () => Promise<void>, private readonly open: (draft: Draft) => void, private readonly filterChanged: () => void) {}
   initialize(): void {
     const browser = document.createElement("div"); browser.id = "record-browser";
     const list = query("#notes-list"); list.before(browser);
-    for (const selector of [".page-header", ".records-toolbar", "#search-summary", ".organization-filters", ".library-bar", "#notebook-manager", "#bulk-toolbar"]) browser.append(query(selector, query("#view-notes")));
+    for (const selector of [".page-header", ".library-bar", ".records-toolbar", "#search-summary", ".organization-filters", "#notebook-manager", "#bulk-toolbar"]) browser.append(query(selector, query("#view-notes")));
     browser.append(list);
     query("#manage-notebooks").addEventListener("click", () => {
+      query<HTMLDetailsElement>(".library-menu").open = false;
       query<HTMLElement>("#notebook-manager").hidden = false; this.editing = undefined;
       query<HTMLInputElement>("#notebook-name").value = ""; query<HTMLElement>("#notebook-name").focus();
     });
     query("#notebook-cancel").addEventListener("click", () => { query<HTMLElement>("#notebook-manager").hidden = true; });
     query("#notebook-filter").addEventListener("change", () => {
       this.options.notebookId = query<HTMLSelectElement>("#notebook-filter").value;
-      void this.refresh().catch(() => showToast("读取失败，请重试"));
+      this.filterChanged();
     });
     query("#notebook-form").addEventListener("submit", event => {
       event.preventDefault(); void this.run(async () => {

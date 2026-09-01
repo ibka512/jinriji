@@ -6,6 +6,19 @@ from playwright.sync_api import expect, sync_playwright
 from ui_acceptance import context_page, nav, save, ready, assert_width, OUTPUT
 SELECT_ALL = "Meta+a" if sys.platform == "darwin" else "Control+a"
 
+def more(page):
+    if not page.locator(".writer-more").evaluate("e => e.open"):
+        page.locator(".writer-more summary").click()
+
+
+def write_tool(page, name):
+    control = page.get_by_role("button", name=name, exact=True)
+    # A closing panel can still paint while it is already semantically closed.
+    in_menu = page.locator(".writer-more button").evaluate_all("(es,name)=>es.some(e=>e.getAttribute('aria-label')===name)", name)
+    if in_menu or not control.is_visible():
+        more(page)
+    control.click()
+
 
 def items(page):
     return page.evaluate("""() => new Promise((resolve, reject) => {
@@ -34,7 +47,7 @@ def test_autosave_tools(browser):
     expect(page.locator("#draft-status")).to_have_text("已保存到本机")
     record = items(page)[0]
     assert record["body"] == "春天来了\n今天写一点" and record["document"]["type"] == "doc"
-    page.get_by_role("button", name="查找替换", exact=True).click()
+    write_tool(page, "查找替换")
     page.locator("#writer-find-text").fill("春天")
     page.locator("#writer-replace-text").fill("秋天")
     page.get_by_role("button", name="全部替换", exact=True).click()
@@ -44,13 +57,14 @@ def test_autosave_tools(browser):
     page.get_by_role("button", name="重做", exact=True).click()
     expect(page.locator(".tiptap")).to_contain_text("秋天来了")
     page.get_by_role("button", name="关闭查找", exact=True).click()
+    more(page)
     with page.expect_download() as download:
         page.locator("#writer-export").select_option("md")
     text = Path(download.value.path()).read_text()
     assert "# 安静写作" in text and "**秋天来了**" in text
-    page.get_by_role("button", name="衬线正文", exact=True).click()
+    write_tool(page, "衬线正文")
     assert "Noto Serif" in page.locator(".tiptap").evaluate("e => getComputedStyle(e).fontFamily")
-    page.get_by_role("button", name="专注写作", exact=True).click()
+    write_tool(page, "专注写作")
     page.screenshot(path=str(OUTPUT / "writing-desktop.png"))
     # Close before debounce: it must flush the current text.
     page.locator(".tiptap").fill("立即离开也会保存")
@@ -72,7 +86,7 @@ def test_history(browser):
     page.locator(".tiptap").fill("第二版正文"); save(page)
     page.get_by_role("button", name="编辑", exact=True).click()
     page.locator(".writer-more summary").click()
-    page.get_by_role("button", name="历史版本", exact=True).click()
+    write_tool(page, "历史版本")
     expect(page.locator("#history-preview")).to_have_text("第一版正文")
     page.get_by_role("button", name="恢复此版本", exact=True).click()
     page.locator("#confirm-accept").click()
@@ -155,7 +169,7 @@ def test_paste_and_length(browser):
     }""")
     expect(page.locator(".tiptap")).to_contain_text("安全正文")
     assert page.locator(".tiptap img,.tiptap [style],.tiptap a[href^='javascript']").count() == 0
-    page.get_by_role("button", name="纯文本粘贴", exact=True).click()
+    write_tool(page, "纯文本粘贴")
     page.locator(".tiptap").press(SELECT_ALL)
     page.locator(".tiptap").evaluate("""e => {
       const data = new DataTransfer(); data.setData('text/html', '<h1>不是标题</h1>'); data.setData('text/plain', '# 原样粘贴');
@@ -182,8 +196,7 @@ def test_layouts(browser):
         if scale == 2:
             page.add_style_tag(content="html { font-size:200% !important; }")
         open_note(page, "安静地写下今天。\n行文有余地，思绪有着落。", "今日随笔")
-        page.get_by_role("button", name="衬线正文", exact=True).click()
-        page.locator(".writer-more summary").click()
+        write_tool(page, "衬线正文")
         page.locator(".tiptap").click()
         assert_width(page)
         page.locator("#save-entry").scroll_into_view_if_needed()

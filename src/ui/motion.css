@@ -1,0 +1,69 @@
+/* One motion contract, using the existing 140/180/240ms tokens.
+   Input & keyboard are instant; occasional overlays explain a state change. */
+.skip-link { transition:none; }
+.writer button { transition:background var(--duration-press) ease,color var(--duration-press) ease; }
+.secondary-button, .text-button, .disclosure-menu > summary, .writer-more > summary {
+  transition:background var(--duration-state) ease,color var(--duration-state) ease;
+}
+.text-button:active:not(:disabled), .secondary-button:active:not(:disabled), .writer button:active:not(:disabled) { background:var(--selected-bg); }
+.nav-item:disabled, .icon-button:disabled, .primary-button:disabled { transform:none; filter:none; }
+.task-check i { transition:background var(--duration-press) ease,border-color var(--duration-press) ease; }
+
+/* Native focus and top-layer behavior are not delayed by visual exit. */
+.editor-dialog, .confirm-dialog, .study-dialog {
+  opacity:0; transform:translateY(10px);
+  transition:opacity var(--duration-panel) var(--ease-out),transform var(--duration-panel) var(--ease-out),display var(--duration-panel) allow-discrete,overlay var(--duration-panel) allow-discrete;
+}
+.editor-dialog[open], .confirm-dialog[open], .study-dialog[open] { opacity:1; transform:none; }
+.editor-dialog::backdrop, .confirm-dialog::backdrop, .study-dialog::backdrop {
+  opacity:0; transition:opacity var(--duration-panel) var(--ease-out),display var(--duration-panel) allow-discrete,overlay var(--duration-panel) allow-discrete;
+}
+.editor-dialog[open]::backdrop, .confirm-dialog[open]::backdrop, .study-dialog[open]::backdrop { opacity:1; }
+@starting-style {
+  .toast.is-showing { opacity:0; transform:translate(-50%,-100%); }
+  .editor-dialog[open], .confirm-dialog[open], .study-dialog[open] { opacity:0; transform:translateY(10px); }
+  .editor-dialog[open]::backdrop, .confirm-dialog[open]::backdrop, .study-dialog[open]::backdrop { opacity:0; }
+}
+/* Unsupported engines retain instant native disclosure behavior. */
+@supports selector(details::details-content) {
+  :is(.disclosure-menu,.writer-more)::details-content {
+    opacity:0; transition:opacity var(--duration-state) var(--ease-out),content-visibility var(--duration-state) allow-discrete;
+  }
+  :is(.disclosure-menu,.writer-more)[open]::details-content { opacity:1; }
+}
+:is(.disclosure-menu,.writer-more):not([open]) :is(.disclosure-panel,.writer-tools) { pointer-events:none; }
+
+@media(hover:hover) and (pointer:fine) {
+  .nav-item:hover, .profile-button:hover, .icon-button:hover, .secondary-button:hover, .writer button:hover, .record-pin:hover { background:var(--control-hover); }
+  .nav-item:hover { color:var(--ink); }
+  .primary-button:hover, .mobile-quick-add:hover { filter:brightness(1.06); }
+  .check-button:hover { border-color:var(--accent); }
+  .note-actions button:hover { color:var(--accent-deep); background:var(--control-hover); }
+  .entry-action:hover { color:var(--danger); background:var(--control-hover); }
+  .settings-action:hover { background:var(--control-hover); }
+  .record-open:hover { background:color-mix(in srgb,var(--accent-soft) 25%,transparent); }
+  .text-button:hover:not(:disabled), .disclosure-menu > summary:hover, .writer-more > summary:hover { background:var(--control-hover); }
+}
+/* No hover remnant on touch, including the existing button family. */
+@media(hover:none) {
+  .nav-item:not(.is-active):hover, .profile-button:hover, .record-open:hover, .record-pin:not(.is-pinned):hover, .writer button:not([aria-pressed="true"]):hover, .text-button:hover { background:transparent; }
+  .icon-button:hover, .secondary-button:hover { background:var(--control-bg); }
+  .primary-button:hover, .mobile-quick-add:hover { filter:none; }
+}
+
+body[data-motion-input="keyboard"] :is(button,summary,.view.is-active,.plan-panel.is-active,.mobile-nav__selection,.segmented__selection,.task-check i,.toast) { transition:none; }
+body[data-motion-input="keyboard"] :is(button:active,.editor-dialog,.confirm-dialog,.study-dialog) { transform:none; transition:none; }
+body[data-motion-input="keyboard"] .toast { transform:translate(-50%,0); }
+body[data-motion-input="keyboard"] :is(.editor-dialog,.confirm-dialog,.study-dialog)::backdrop,
+body[data-motion-input="keyboard"] :is(.disclosure-menu,.writer-more)::details-content { transition:none; }
+
+@media(prefers-reduced-motion:reduce) {
+  .editor-dialog, .confirm-dialog, .study-dialog, .editor-dialog[open], .confirm-dialog[open], .study-dialog[open] {
+    transform:none; transition:opacity var(--duration-state) var(--ease-out),display var(--duration-state) allow-discrete,overlay var(--duration-state) allow-discrete;
+  }
+  .editor-dialog::backdrop, .confirm-dialog::backdrop, .study-dialog::backdrop { transition-duration:var(--duration-state); }
+  @starting-style {
+    .editor-dialog[open], .confirm-dialog[open], .study-dialog[open] { transform:none; opacity:0; }
+    .toast.is-showing { transform:translate(-50%,0); }
+  }
+}

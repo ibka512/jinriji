@@ -6,6 +6,7 @@ import { characterCount, documentMarkdown, documentText, MAX_NOTE_LENGTH, noteEx
 import { query, queryAll, safeHTML as escape } from "../../ui/dom";
 import type { Item } from "../../domain/models";
 import { hydrateImages } from "./local-images";
+import { documentReferences } from "../../domain/notebooks";
 
 const button = (action: string, label: string, symbol = label): string => `<button type="button" data-write="${action}" aria-label="${label}" title="${label}">${symbol}</button>`;
 
@@ -16,12 +17,18 @@ export class RichWriter {
   notes: Item[] = [];
   onSelectionTask?: (text: string) => Promise<void>;
   onImage?: (file: File) => Promise<string>;
+  onBackup?: () => Promise<void>;
   private operation = false;
   private plainPaste = false;
   private composing = false;
   private matches: { from: number; to: number }[] = [];
   private matchIndex = -1;
   private selection = { from: 1, to: 1 };
+  private cachedSource?: object;
+  private cachedDocument: NoteDocument = textDocument("");
+  private cachedText = "";
+  private cachedCount = 0;
+  private exportHasReferences = false;
   private readonly limitExtension = Extension.create({
     name: "boundedDocument",
     addProseMirrorPlugins: () => [new Plugin({ filterTransaction: tr => {
@@ -52,6 +59,34 @@ export class RichWriter {
     tools.insertAdjacentHTML("afterbegin", `${button("note-link", "链接笔记", "笔记链接")}${button("selection-task", "选段转待办")}${button("image", "插入图片", "图片")}${button("table", "插入表格", "表格")}`);
     this.root.insertAdjacentHTML("beforeend", '<input type="file" id="writer-image" accept="image/png,image/jpeg,image/webp" hidden>');
     query(".writer-chrome", this.root).insertAdjacentHTML("afterend", `<div class="writer-insert" hidden><label>链接到笔记<input type="search" id="note-link-search" placeholder="搜索笔记" autocomplete="off"></label><div id="note-link-results"></div>${button("unlink-note", "移除笔记链接")}${button("close-insert", "关闭插入", "关闭")}</div><div class="table-tools" hidden>${button("row-add", "在下方添加行", "+ 行")}${button("column-add", "在右侧添加列", "+ 列")}${button("row-delete", "删除当前行", "删行")}${button("column-delete", "删除当前列", "删列")}${button("table-delete", "删除表格")}</div>`);
+    const toolbar = query<HTMLElement>(".writer-toolbar", this.root);
+    const take = (names: string[], destination: HTMLElement, labels = false): void => {
+      for (const name of names) {
+        const control = query<HTMLButtonElement>(`[data-write="${name}"]`, this.root);
+        if (labels) control.textContent = control.getAttribute("aria-label");
+        destination.append(control);
+      }
+    };
+    for (const [label, names] of [
+      ["格式", ["italic", "strike", "highlight", "bulletList", "orderedList", "taskList", "blockquote", "rule"]],
+      ["插入", ["link", "note-link", "image", "table", "selection-task"]],
+      ["写作", ["find", "focus", "serif", "spacing", "plain", "history"]],
+    ] as const) {
+      const group = document.createElement("section"); group.className = "writer-tool-group";
+      group.innerHTML = `<h3>${label}</h3><div></div>`; tools.append(group); take([...names], group.querySelector("div")!, true);
+    }
+    tools.append(query(".table-tools", this.root), query(".writer-export", this.root));
+    tools.insertAdjacentHTML("beforeend", '<p class="record-meta">TXT 仅含文字；Markdown 保留基础格式。</p><p class="writer-export-hint record-meta">正文导出不含图片文件，笔记链接仅在此应用内有效。<button type="button" data-write="backup">完整备份</button></p>');
+    take(["undo", "redo", "heading", "bold"], toolbar);
+    query('[data-write="undo"]', toolbar).innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5-5 5 5 5M4 10h10a6 6 0 0 1 0 12"/></svg>';
+    query('[data-write="redo"]', toolbar).innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 5 5-5 5m5-5H10a6 6 0 0 0 0 12"/></svg>';
+    toolbar.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      const controls = [...toolbar.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")];
+      const index = controls.indexOf(document.activeElement as HTMLButtonElement); if (index < 0) return;
+      event.preventDefault(); const next = event.key === "Home" ? 0 : event.key === "End" ? controls.length - 1 : (index + (event.key === "ArrowLeft" ? -1 : 1) + controls.length) % controls.length;
+      controls.forEach((control, i) => control.tabIndex = i === next ? 0 : -1); controls[next]?.focus();
+    });
     query("#note-link-search").addEventListener("input", () => this.renderNoteLinks());
     query("#note-link-results").addEventListener("click", event => {
       const id = (event.target as Element).closest<HTMLElement>("[data-insert-note]")?.dataset.insertNote;
@@ -95,8 +130,15 @@ export class RichWriter {
 
   get isComposing(): boolean { return this.composing || Boolean(this.editor?.view.composing); }
   get isWorking(): boolean { return this.operation; }
-  get document(): NoteDocument { return this.editor?.getJSON() || textDocument(""); }
-  get text(): string { return documentText(this.document); }
+  private syncContent(): void {
+    const source = this.editor?.state.doc;
+    if (source === this.cachedSource) return;
+    this.cachedSource = source; this.cachedDocument = this.editor?.getJSON() || textDocument("");
+    this.cachedText = documentText(this.cachedDocument); this.cachedCount = characterCount(this.cachedText);
+    const references = documentReferences(this.cachedDocument); this.exportHasReferences = Boolean(references.assets.size || references.notes.size);
+  }
+  get document(): NoteDocument { this.syncContent(); return this.cachedDocument; }
+  get text(): string { this.syncContent(); return this.cachedText; }
   get cursor(): number { return this.editor?.state.selection.from || 1; }
 
   mount(doc: NoteDocument, cursor = 1): void {
@@ -139,7 +181,8 @@ export class RichWriter {
     const selection = this.editor.state.selection;
     this.editor.view.dom.classList.toggle("is-empty", this.editor.isEmpty);
     const selected = characterCount(this.editor.state.doc.textBetween(selection.from, selection.to, "\n"));
-    query("#writer-count").textContent = `${characterCount(this.text).toLocaleString()} 字符${selected ? ` · 已选 ${selected.toLocaleString()}` : ""}`;
+    this.syncContent();
+    query("#writer-count").textContent = `${this.cachedCount.toLocaleString()} 字符${selected ? ` · 已选 ${selected.toLocaleString()}` : ""}`;
     query("#writer-count").setAttribute("title", "不含空白，汉字、字母及标点各计一个字符");
     for (const name of ["heading", "bold", "italic", "strike", "highlight", "bulletList", "orderedList", "taskList", "blockquote"]) {
       query(`[data-write="${name}"]`).setAttribute("aria-pressed", String(this.editor.isActive(name)));
@@ -148,6 +191,11 @@ export class RichWriter {
     query<HTMLButtonElement>('[data-write="redo"]').disabled = !this.editor.can().redo();
     query<HTMLButtonElement>('[data-write="selection-task"]').disabled = !selected || this.operation;
     query<HTMLElement>(".table-tools").hidden = !this.editor.isActive("table");
+    query(".writer-more summary").textContent = this.editor.isActive("table") ? "更多 · 表格" : "更多";
+    query<HTMLElement>(".writer-export-hint").hidden = !this.exportHasReferences;
+    const controls = queryAll<HTMLButtonElement>(".writer-toolbar button:not(:disabled)", this.root);
+    const active = controls.find(control => control === document.activeElement) || controls[0];
+    controls.forEach(control => control.tabIndex = control === active ? 0 : -1);
     for (const [name, state] of [["serif", this.root.classList.contains("serif-prose")], ["spacing", this.root.classList.contains("roomy-prose")], ["plain", this.plainPaste], ["focus", document.body.classList.contains("writing-focus")]] as const) query(`[data-write="${name}"]`).setAttribute("aria-pressed", String(state));
   }
 
@@ -197,6 +245,7 @@ export class RichWriter {
       }
       case "plain": this.plainPaste = !this.plainPaste; break;
       case "history": this.onHistory(); break;
+      case "backup": if (this.onBackup) void this.perform(this.onBackup); break;
       case "link":
         this.selection = { from: this.editor.state.selection.from, to: this.editor.state.selection.to };
         query<HTMLElement>(".writer-link").hidden = false;
@@ -213,6 +262,8 @@ export class RichWriter {
       case "unlink": chain.setTextSelection(this.selection).extendMarkRange("link").unsetLink().run(); query<HTMLElement>(".writer-link").hidden = true; break;
       case "close-link": query<HTMLElement>(".writer-link").hidden = true; this.focus(); break;
     }
+    // A completed tool action returns the canvas to the foreground.
+    query<HTMLDetailsElement>(".writer-more").open = false;
     this.updateTools();
   }
 

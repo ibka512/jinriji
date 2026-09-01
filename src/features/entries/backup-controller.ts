@@ -26,6 +26,9 @@ export class BackupController {
       this.settings.get<RecoveryPoint | undefined>(RECOVERY_KEY, undefined),
     ]);
     query("#last-export").textContent = lastExport ? `上次导出 ${momentLabel(lastExport)}` : "尚未导出";
+    query("#import-hint").textContent = !lastExport || Date.now() - Date.parse(lastExport) > 7 * 86400_000
+      ? "建议保存一份完整备份，含图片与笔记本。数据只在此浏览器，不会自动云同步。"
+      : "备份已生成，请确认下载文件已保存。导入前会预览并保留恢复点。";
     query<HTMLElement>("#restore-recovery").hidden = !recovery;
     query("#recovery-time").textContent = recovery ? momentLabel(recovery.savedAt) : "";
   }

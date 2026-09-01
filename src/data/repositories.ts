@@ -1,7 +1,7 @@
 import type { BackupPayload, Course, Item, TimetableData, LibraryData } from "../domain/models";
 import type { JinrijiDatabase } from "./database";
 import { nextRepeatSchedule, normalizeTags, validateOrganization } from "../domain/organization";
-import { documentText, validateDocument, textDocument } from "../domain/note-document";
+import { documentText, validateDocument } from "../domain/note-document";
 
 export interface CreateItemInput {
   title: string;
@@ -30,7 +30,7 @@ export interface CreateCourseInput {
 }
 
 export type ItemChanges = Partial<Pick<Item, "title" | "body" | "document" | "notebookId" | "sourceNoteId" | "kind" | "status" | "dueAt" | "startAt" | "allDay" | "dateOnly" | "deletedAt" | "courseId" | "pinned" | "tags" | "repeat">>;
-export type BulkAction = "pin" | "unpin" | "tag" | "complete" | "delete";
+export type BulkAction = "pin" | "unpin" | "tag" | "complete" | "delete" | "notebook";
 export type CourseChanges = Partial<Pick<Course, "name" | "firstMeetingAt" | "allDay" | "dateOnly" | "deletedAt" | "location" | "instructor">>;
 export interface RecoveryPoint { savedAt: string; payload: BackupPayload }
 export const RECOVERY_KEY = "recovery:v0.5";
@@ -115,8 +115,10 @@ export class AppRepository {
       const completedAt = changes.status === "completed" && current.status !== "completed" ? now
         : changes.status === "open" ? undefined : current.completedAt;
       const updated: Item = { ...current, ...changes, completedAt, updatedAt: now, revision: current.revision + 1 };
-      // Plain-text editing of a converted task must not leave a stale rich projection.
-      if (changes.body !== undefined && changes.document === undefined && current.document && changes.body !== current.body) updated.document = textDocument(changes.body);
+      // A text projection is not a replacement for a structured source document.
+      if (changes.body !== undefined && changes.document === undefined && current.document && changes.body !== current.body) {
+        throw new Error("此记录包含格式内容，请使用正文编辑器修改；原文未改变。");
+      }
       if (updated.document) { validateDocument(updated.document); updated.body = documentText(updated.document); }
       if (updated.kind !== "task") updated.repeat = undefined;
       if (changes.tags) updated.tags = normalizeTags(changes.tags);
@@ -157,23 +159,37 @@ export class AppRepository {
     return this.updateItem(id, { deletedAt: new Date().toISOString() });
   }
 
-  async organizeItems(records: { id: string; revision: number }[], action: BulkAction, tags: string[] = []): Promise<number> {
+  async organizeItems(records: { id: string; revision: number }[], action: BulkAction, tags: string[] = [], notebookId?: string): Promise<number> {
     if (!records.length) return 0;
     if (new Set(records.map(item => item.id)).size !== records.length) throw new Error("选择中包含重复记录");
     const additions = normalizeTags(tags);
     if (action === "tag" && !additions.length) throw new Error("请输入标签");
-    return this.database.transaction("rw", this.database.items, async () => {
+    return this.database.transaction("rw", [this.database.items, this.database.notebooks], async () => {
+      if (action === "notebook" && notebookId) {
+        const book = await this.database.notebooks.get(notebookId);
+        if (!book || book.deletedAt) throw new Error("笔记本已变动，请重新选择");
+      }
       let count = 0;
       for (const selected of records) {
         const current = await this.database.items.get(selected.id);
         if (!current || current.deletedAt || current.revision !== selected.revision) throw new Error("部分记录已变动，本次整理未保存。请重新选择后重试。");
+        if (action === "notebook" && current.kind !== "note") throw new Error("请只选择笔记后移动；本次未作修改。");
         if (action === "complete" && (current.kind !== "task" || current.status !== "open")) continue;
         const changes: ItemChanges = action === "pin" ? { pinned: true } : action === "unpin" ? { pinned: false }
           : action === "tag" ? { tags: normalizeTags([...(current.tags || []), ...additions]) }
-          : action === "complete" ? { status: "completed" } : { deletedAt: new Date().toISOString() };
+          : action === "complete" ? { status: "completed" } : action === "notebook" ? { notebookId: notebookId || undefined } : { deletedAt: new Date().toISOString() };
         await this.updateItem(current.id, changes, selected.revision); count++;
       }
       return count;
+    });
+  }
+
+  /** Derive an editable task without mutating the source note or its attachments. */
+  async createLinkedTask(noteId: string, expectedRevision: number): Promise<Item> {
+    return this.database.transaction("rw", this.database.items, async () => {
+      const note = await this.database.items.get(noteId);
+      if (!note || note.deletedAt || note.kind !== "note" || note.revision !== expectedRevision) throw new Error("来源笔记已变动，请重新打开");
+      return this.createItem({ kind: "task", title: note.title, body: note.title, sourceNoteId: note.id, courseId: note.courseId, tags: note.tags });
     });
   }
 

@@ -5,6 +5,7 @@ import { confirmAction } from "../../ui/confirmation";
 import { query, safeHTML as escape } from "../../ui/dom";
 import { showToast } from "../../ui/toast";
 import { selectedTerm, selectedWeek, type CourseView } from "./render";
+import { parseSchedule } from "../../domain/dates";
 
 interface Context { courses: Course[]; data: TimetableData; view: CourseView }
 const field = (label: string, id: string, type: string, value = "", extra = ""): string => `<label class="study-field" for="${id}"><span>${label}</span><input id="${id}" name="${id}" type="${type}" value="${escape(value)}" ${extra}/></label>`;
@@ -110,6 +111,34 @@ export class CourseController {
     }
   }
   private value(id: string): string { return query<HTMLInputElement | HTMLSelectElement>(`#${id}`, this.dialog).value; }
+
+  openNewCourse(): void {
+    const { data, view } = this.context();
+    const current = selectedTerm(data, view);
+    this.open("添加课程", `${field("课程名称", "study-name", "text", "", 'maxlength="200"')}
+      ${select("安排到", "study-term", [["", "暂不重复排课"], ...data.terms.map(term => [term.id, term.name] as [string, string])], current?.id || "")}
+      <div id="new-course-single" class="study-fields-pair">${field("单次日期（选填）", "study-single-date", "date")}${field("时间（选填）", "study-single-time", "time")}</div>
+      <div id="new-course-schedule"><div class="study-fields-pair">${select("星期", "study-weekday", Array.from({ length: 7 }, (_, i) => [String(i + 1), `周${"一二三四五六日"[i]}`]), "1")}${select("重复", "study-repeat", [["every", "每周"], ["odd", "单周"], ["even", "双周"]], "every")}</div>
+      <div class="study-fields-pair">${field("上课时间", "study-time-start", "time", "09:00")}${field("下课时间", "study-time-end", "time", "10:00")}</div>
+      <div class="study-fields-pair">${field("起始周", "study-week-start", "number", "1", 'min="1" max="60"')}${field("结束周", "study-week-end", "number", String(current?.totalWeeks || 18), 'min="1" max="60"')}</div></div>
+      <div class="study-fields-pair">${field("教师（选填）", "study-instructor", "text", "", 'maxlength="200"')}${field("地点（选填）", "study-location", "text", "", 'maxlength="200"')}</div>
+      <p class="record-meta" id="new-course-hint">仅建资料不会进入课表；可先新建学期，再添加上课时段。</p>`, async () => {
+        const term = data.terms.find(term => term.id === this.value("study-term"));
+        const repeat = this.value("study-repeat"); let startWeek = Number(this.value("study-week-start"));
+        if (repeat !== "every" && startWeek % 2 !== (repeat === "odd" ? 1 : 0)) startWeek++;
+        const rule: RecurrenceRule | undefined = term ? { id: crypto.randomUUID(), courseId: crypto.randomUUID(), weekday: Number(this.value("study-weekday")), startTime: this.value("study-time-start"), endTime: this.value("study-time-end"), startWeek, endWeek: Number(this.value("study-week-end")), intervalWeeks: repeat === "every" ? 1 : 2 } : undefined;
+        const single = term ? undefined : parseSchedule(this.value("study-single-date"), this.value("study-single-time"));
+        await this.repository.createCourse({ name: this.value("study-name").trim(), location: this.value("study-location").trim(), instructor: this.value("study-instructor").trim(), firstMeetingAt: single?.at, allDay: single?.allDay, dateOnly: single?.dateOnly }, rule, term);
+        if (term) view.termId = term.id;
+      });
+    const toggle = (): void => {
+      const term = data.terms.find(term => term.id === this.value("study-term"));
+      query<HTMLElement>("#new-course-schedule").hidden = !term; query<HTMLElement>("#new-course-hint").hidden = Boolean(term);
+      query<HTMLElement>("#new-course-single").hidden = Boolean(term);
+      if (term) query<HTMLInputElement>("#study-week-end").value = String(term.totalWeeks);
+    };
+    query("#study-term").addEventListener("change", toggle); toggle(); this.baseline = this.contents();
+  }
 
   private openTerm(edit: boolean): void {
     const { data, view } = this.context();

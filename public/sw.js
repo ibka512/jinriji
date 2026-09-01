@@ -1,4 +1,4 @@
-const CACHE_NAME = "jinriji-v0.9.0";
+const CACHE_NAME = "jinriji-development";
 const BUILD_ASSETS = [];
 const APP_SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./favicon.ico",

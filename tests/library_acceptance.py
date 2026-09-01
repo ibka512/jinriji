@@ -1,8 +1,9 @@
 """v0.9: page editor, notebooks, links, selected tasks, local media and navigation guards."""
 import base64
+import os
 from playwright.sync_api import expect, sync_playwright
 from ui_acceptance import context_page, nav, save, ready, assert_width, OUTPUT, BASE_URL, upload
-from writing_acceptance import items, open_note, SELECT_ALL
+from writing_acceptance import items, open_note, SELECT_ALL, write_tool
 from timetable_acceptance import export_data
 
 
@@ -14,6 +15,7 @@ def more(page):
 def test_notebooks_templates(browser):
     context, page, errors = context_page(browser)
     nav(page, "notes")
+    page.locator(".library-menu summary").click()
     page.locator("#manage-notebooks").click()
     page.locator("#notebook-name").fill("课堂")
     page.locator("#notebook-form button[type='submit']").click()
@@ -21,6 +23,7 @@ def test_notebooks_templates(browser):
     book_id = page.locator("[data-rename-book]").get_attribute("data-rename-book")
     page.locator("#notebook-cancel").click()
     page.locator("#notebook-filter").select_option(book_id)
+    page.locator(".library-menu summary").click()
     page.locator("#new-note-template").select_option("lecture")
     expect(page.locator("#note-editor-page")).to_be_visible()
     expect(page.locator("dialog[open]")).to_have_count(0)
@@ -29,6 +32,7 @@ def test_notebooks_templates(browser):
     assert items(page)[0]["notebookId"] == book_id
     page.screenshot(path=str(OUTPUT / "library-desktop-editor.png"))
     save(page)
+    page.locator(".library-menu summary").click()
     page.locator("#manage-notebooks").click()
     page.locator("[data-rename-book]").click()
     page.locator("#notebook-name").fill("文学课")
@@ -46,13 +50,13 @@ def test_links_selected_tasks(browser):
     open_note(page, "先整理知识", "知识索引"); save(page)
     open_note(page, "需要复习这一节", "课堂复习")
     page.locator(".tiptap").press(SELECT_ALL)
-    page.get_by_role("button", name="选段转待办", exact=True).click()
+    write_tool(page, "选段转待办")
     expect(page.locator("#toast-message")).to_contain_text("已加入待办")
     data = items(page); task = next(item for item in data if item["kind"] == "task")
     note = next(item for item in data if item["title"] == "课堂复习")
     assert task["sourceNoteId"] == note["id"] and note["body"] == "需要复习这一节"
     page.locator(".tiptap").press(SELECT_ALL)
-    page.get_by_role("button", name="链接笔记", exact=True).click()
+    write_tool(page, "链接笔记")
     page.locator("#note-link-search").fill("知识索引")
     page.locator("[data-insert-note]").click()
     expect(page.locator(".tiptap a[data-note-id]")).to_have_text("需要复习这一节")
@@ -73,14 +77,15 @@ def test_image_table_backup(browser):
     context, page, errors = context_page(browser)
     open_note(page, "表格和图片", "课堂资料")
     page.locator(".tiptap").press("End")
-    page.get_by_role("button", name="插入表格", exact=True).click()
+    write_tool(page, "插入表格")
     expect(page.locator(".tiptap table tr")).to_have_count(3)
     page.locator(".tiptap table th p").first.click(); page.keyboard.type("Topic")
-    page.get_by_role("button", name="在下方添加行", exact=True).click()
+    more(page)
+    write_tool(page, "在下方添加行")
     expect(page.locator(".tiptap table tr")).to_have_count(4)
-    page.get_by_role("button", name="在右侧添加列", exact=True).click()
+    write_tool(page, "在右侧添加列")
     expect(page.locator(".tiptap table tr").first.locator("th,td")).to_have_count(4)
-    page.get_by_role("button", name="删除当前列", exact=True).click()
+    write_tool(page, "删除当前列")
     expect(page.locator(".tiptap table tr").first.locator("th,td")).to_have_count(3)
     page.locator(".tiptap > p").last.click()
     encoded = page.evaluate("""() => { const canvas = document.createElement('canvas'); canvas.width=640; canvas.height=320; const c=canvas.getContext('2d'); c.fillStyle='#64755e'; c.fillRect(0,0,640,320); return canvas.toDataURL('image/png').split(',')[1]; }""")
@@ -99,7 +104,7 @@ def test_image_table_backup(browser):
     nav(page, "notes"); page.locator("#notes-list .record-open").click()
     page.wait_for_function("() => document.querySelector('.detail-body img')?.naturalWidth > 0")
     page.screenshot(path=str(OUTPUT / "library-image-table.png"))
-    if ":5173" not in BASE_URL:
+    if ":5173" not in BASE_URL and os.getenv("JINRIJI_SKIP_OFFLINE") != "1":
         page.wait_for_function("() => !!navigator.serviceWorker.controller")
         context.set_offline(True); page.reload(); ready(page)
         page.wait_for_function("() => document.querySelector('.detail-body img')?.naturalWidth > 0")
@@ -124,10 +129,10 @@ def test_navigation_and_focus(browser):
     expect(page.locator(".tiptap")).to_have_text("立即切换仍保存")
     page.reload(); ready(page)
     expect(page.locator(".tiptap")).to_have_text("立即切换仍保存")
-    more(page); page.get_by_role("button", name="专注写作", exact=True).click()
+    more(page); write_tool(page, "专注写作")
     expect(page.locator(".sidebar")).not_to_be_visible()
     expect(page.locator("#record-browser")).not_to_be_visible()
-    page.get_by_role("button", name="专注写作", exact=True).click()
+    write_tool(page, "专注写作")
     save(page)
     assert not errors, errors
     context.close()

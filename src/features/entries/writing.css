@@ -7,7 +7,6 @@
 .writer-toolbar, .writer-tools { display:flex; align-items:center; gap:4px; overflow-x:auto; overscroll-behavior-x:contain; padding:4px 0; scrollbar-width:thin; }
 .writer-toolbar { border-block:1px solid var(--line); }
 .writer button { flex-shrink:0; min-width:44px; min-height:44px; padding:8px 10px; border:0; border-radius:10px; background:transparent; color:var(--ink); cursor:pointer; font-size:.9375rem; }
-.writer button:hover { background:var(--control-bg); }
 .writer button[aria-pressed="true"] { background:var(--selected-bg); color:var(--accent-deep); }
 .writer button:disabled { opacity:.45; cursor:default; }
 .writer-tools { margin-bottom:8px; }

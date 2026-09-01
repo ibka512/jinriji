@@ -3,7 +3,7 @@ import { addDays, courseOccurrences, emptyTimetable } from "../../domain/timetab
 import { courseSummary, renderCourseDetails, renderTimetable, type CourseView } from "../courses/render";
 import { appointments, dayKey, itemDay, itemTime, momentLabel, startOfWeek, taskGroup, taskGroupNames, type Appointment, type TaskGroup } from "../../domain/dates";
 import { query, safeHTML as escape } from "../../ui/dom";
-import { filterRecords, repeatNames, tagKey } from "../../domain/organization";
+import { filterRecords, repeatNames, tagKey, searchExcerpt, type RecordSort } from "../../domain/organization";
 import { documentHTML } from "../../domain/note-document";
 import { documentReferences } from "../../domain/notebooks";
 import { hydrateImages } from "./local-images";
@@ -22,6 +22,8 @@ export interface RenderOptions {
   selecting?: boolean;
   selected?: Map<string, number>;
   notebookId?: string;
+  sort?: RecordSort;
+  visibleLimit?: number;
 }
 const labels = { note: "便签", task: "待办", event: "日程" };
 const empty = (message: string, type?: string, action = "添加第一条记录"): string => `<div class="empty-state"><p>${message}</p>${type ? `<button class="secondary-button" data-open-compose data-compose-type="${type}">${action}</button>` : ""}</div>`;
@@ -32,7 +34,9 @@ function noteCard(item: Item, selected = false, options?: RenderOptions): string
   const picking = Boolean(options?.selecting); const picked = options?.selected?.has(item.id);
   const attrs = picking ? `data-record-select="${escape(item.id)}" aria-pressed="${Boolean(picked)}"` : `${openAttrs(item.id)} ${selected ? 'aria-current="true"' : ""}`;
   const tags = item.tags || [];
-  return `<article class="note-card paper-card user-entry${selected || picked ? " is-selected" : ""}" data-entry-id="${escape(item.id)}"><button class="record-open" ${attrs}>${picking ? `<span class="record-pick" aria-hidden="true">${picked ? "✓" : ""}</span>` : ""}<span class="eyebrow">${labels[item.kind]}${item.pinned ? " · 置顶" : ""}${item.status === "completed" ? " · 已完成" : item.status === "archived" ? " · 已归档" : ""}</span><h2>${escape(item.title)}</h2>${item.body !== item.title ? `<p>${escape(item.body.slice(0, 240))}</p>` : ""}<span class="record-meta">${escape(momentLabel(itemTime(item) || item.updatedAt, itemTime(item) ? item.allDay : false, item.dateOnly))}${item.repeat ? ` · ${repeatNames[item.repeat.frequency]}` : ""}</span>${tags.length ? `<span class="record-tags">${tags.slice(0, 3).map(tag => `<span>#${escape(tag)}</span>`).join("")}${tags.length > 3 ? `<span>+${tags.length - 3}</span>` : ""}</span>` : ""}</button>${!picking ? `<button class="record-pin${item.pinned ? " is-pinned" : ""}" data-record-pin="${escape(item.id)}" aria-label="${item.pinned ? "取消置顶" : "置顶"}：${escape(item.title)}" aria-pressed="${Boolean(item.pinned)}">${pinIcon}</button>` : ""}</article>`;
+  const snippet = searchExcerpt(item.body, options?.search || "");
+  const preview = `${escape(snippet.before)}${snippet.match ? `<mark>${escape(snippet.match)}</mark>` : ""}${escape(snippet.after)}`;
+  return `<article class="note-card paper-card user-entry${selected || picked ? " is-selected" : ""}" data-entry-id="${escape(item.id)}"><button class="record-open" ${attrs}>${picking ? `<span class="record-pick" aria-hidden="true">${picked ? "✓" : ""}</span>` : ""}<span class="eyebrow">${labels[item.kind]}${item.pinned ? " · 置顶" : ""}${item.status === "completed" ? " · 已完成" : item.status === "archived" ? " · 已归档" : ""}</span><h2>${escape(item.title)}</h2>${item.body !== item.title ? `<p>${preview}</p>` : ""}<span class="record-meta">${escape(momentLabel(itemTime(item) || item.updatedAt, itemTime(item) ? item.allDay : false, item.dateOnly))}${item.repeat ? ` · ${repeatNames[item.repeat.frequency]}` : ""}</span>${tags.length ? `<span class="record-tags">${tags.slice(0, 3).map(tag => `<span>#${escape(tag)}</span>`).join("")}${tags.length > 3 ? `<span>+${tags.length - 3}</span>` : ""}</span>` : ""}</button>${!picking ? `<button class="record-pin${item.pinned ? " is-pinned" : ""}" data-record-pin="${escape(item.id)}" aria-label="${item.pinned ? "取消置顶" : "置顶"}：${escape(item.title)}" aria-pressed="${Boolean(item.pinned)}">${pinIcon}</button>` : ""}</article>`;
 }
 
 export function taskRow(item: Item): string {
@@ -46,7 +50,8 @@ function appointmentRow(entry: Appointment): string {
 }
 
 export function renderNotes(items: Item[], options: RenderOptions): void {
-  const filtered = filterRecords(items, options.search, options.filter, options.tag, options.pinnedOnly).filter(item => !options.notebookId || (options.notebookId === "unfiled" ? item.kind === "note" && !item.notebookId : item.notebookId === options.notebookId));
+  const filtered = filterRecords(items, options.search, options.filter, options.tag, options.pinnedOnly, options.notebookId, options.sort);
+  const limit = options.visibleLimit || 80;
   const visible = new Set(filtered.map(item => item.id));
   for (const id of options.selected?.keys() || []) if (!visible.has(id)) options.selected?.delete(id);
   const tags = new Map<string, string>();
@@ -61,10 +66,12 @@ export function renderNotes(items: Item[], options: RenderOptions): void {
   query("#selection-count").textContent = `已选 ${options.selected?.size || 0} 项`;
   query("#select-visible").textContent = filtered.length && options.selected?.size === filtered.length ? "取消全选" : "全选";
   document.querySelectorAll<HTMLButtonElement>("[data-bulk-action]").forEach(button => {
-    button.disabled = !options.selected?.size || (button.dataset.bulkAction === "complete" && !filtered.some(item => options.selected?.has(item.id) && item.kind === "task" && item.status === "open"));
+    button.disabled = !options.selected?.size || (button.dataset.bulkAction === "complete" && !filtered.some(item => options.selected?.has(item.id) && item.kind === "task" && item.status === "open")) || (button.dataset.bulkAction === "notebook" && filtered.some(item => options.selected?.has(item.id) && item.kind !== "note"));
   });
-  query("#notes-list").innerHTML = filtered.length ? filtered.map(item => noteCard(item, options.selection?.entity === "item" && options.selection.id === item.id, options)).join("")
-    : options.search || options.filter !== "all" || options.tag || options.pinnedOnly ? empty("没有找到记录") : empty("还没有记录", "note");
+  query("#notes-list").innerHTML = filtered.length ? filtered.slice(0, limit).map(item => noteCard(item, options.selection?.entity === "item" && options.selection.id === item.id, options)).join("") + (filtered.length > limit ? `<button class="secondary-button" id="load-more-records">显示更多 · 剩余 ${filtered.length - limit} 条</button>` : "")
+    : options.search || options.filter !== "all" || options.tag || options.pinnedOnly || options.notebookId ? `${empty("没有符合筛选的记录")}<button class="text-button" data-clear-filters>清除筛选</button>` : empty("还没有记录", "note");
+  const count = Number(options.filter !== "all") + Number(Boolean(options.tag)) + Number(Boolean(options.pinnedOnly));
+  query("#filter-summary").textContent = count ? `筛选 · ${count}` : "筛选与排序";
   query("#search-summary").textContent = `${filtered.length} 条记录`;
 }
 
@@ -91,6 +98,12 @@ export function renderDetail(items: Item[], courses: Course[], selection?: Selec
     catch { body.textContent = item.body; }
   }
   if (item?.kind === "note") target.querySelector<HTMLElement>(".detail-body")!.classList.add("editable-prose");
+  if (item?.kind === "note") {
+    const updated = target.lastElementChild!; updated.classList.add("reading-meta");
+    target.querySelector(".detail-body")!.before(updated);
+  }
+  const linkedTask = target.querySelector<HTMLElement>("[data-entry-convert]");
+  if (linkedTask) linkedTask.textContent = "创建关联待办";
   if (course) target.insertAdjacentHTML("beforeend", renderCourseDetails(course, items, timetable));
   if (item) {
     target.querySelector(".detail-actions")?.insertAdjacentHTML("afterbegin", `<button class="secondary-button" data-record-pin="${escape(item.id)}" aria-pressed="${Boolean(item.pinned)}">${item.pinned ? "取消置顶" : "置顶"}</button>`);
@@ -153,8 +166,11 @@ export function renderTimeViews(items: Item[], courses: Course[], options: Rende
     const date = new Date(week); date.setDate(date.getDate() + index);
     const key = dayKey(date);
     const entries = allAppointments.filter(entry => entry.day === key);
-    return `<section class="agenda-day paper-card${key === today ? " is-today" : ""}"><h3><span>${new Intl.DateTimeFormat("zh-CN", { weekday: "short" }).format(date)}</span><span>${date.getDate()}${key === today ? ' <small>今天</small>' : ""}</span></h3><div>${entries.length ? entries.map(appointmentRow).join("") : '<p class="agenda-empty">无安排</p>'}</div></section>`;
+    return `<section class="agenda-day paper-card${key === today ? " is-today" : ""}"><h3><button class="agenda-date-add" data-open-compose data-compose-type="schedule" data-compose-date="${key}" aria-label="在 ${key} 添加日程"><span>${new Intl.DateTimeFormat("zh-CN", { weekday: "short" }).format(date)}</span><span>${date.getDate()}${key === today ? ' <small>今天</small>' : ""}</span></button></h3><div>${entries.length ? entries.map(appointmentRow).join("") : '<p class="agenda-empty">无安排</p>'}</div></section>`;
   }).join("");
+  const unscheduled = items.filter(item => item.kind === "event" && !item.deletedAt && !itemDay(item));
+  query<HTMLElement>("#unscheduled-events").hidden = !unscheduled.length;
+  query("#unscheduled-events").innerHTML = `<h2>待安排日期</h2>${unscheduled.map(item => `<button class="text-button" data-entry-edit="${escape(item.id)}">${escape(item.title)} · 设置日期</button>`).join("")}`;
   const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowEntries = allAppointments.filter(entry => entry.day === dayKey(tomorrow));
   query("#tomorrow-preview").innerHTML = `<div class="card-heading"><h2>明日</h2><span class="count-pill">${tomorrowEntries.length}</span></div>${tomorrowEntries.length ? tomorrowEntries.map(appointmentRow).join("") : empty("暂无安排")}`;

@@ -196,6 +196,34 @@
       "expected_outputs": ["单元测试与生产构建", "多端浏览器回归及截图", "使用与数据安全文档"],
       "verification": "101 项单元测试、最终构建32组Chromium流程、52张截图、类型检查/构建/diff通过；生产依赖0漏洞；无新增依赖；未提交推送部署，真实手机输入法/Safari尚待实机验证",
       "status": "completed"
+    },
+    {
+      "id": "M23", "name": "v0.10 日常体验打磨", "owner": "web-design-engineer", "depends_on": ["M22"],
+      "objective": "完成内容保真、写作整理、课程首时段和持续错误反馈闭环",
+      "expected_outputs": ["安全关联待办", "分组写作工具", "批量移本和排课", "规模验收"],
+      "verification": "108 项单元测试、40 组 Chromium 流程、56 张截图和 500/2000 条记录基线通过；未发布",
+      "status": "completed"
+    },
+    {
+      "id": "M24", "name": "v1.0 统一操作与视觉", "owner": "web-design-engineer", "depends_on": ["M23"],
+      "objective": "统一四主题、多端、焦点、忙碌、触摸和长文操作细节",
+      "expected_outputs": ["共享状态样式", "长文动态顶栏", "四主题对比度证据", "品牌约束"],
+      "verification": "Chromium/WebKit 主题、窄屏、200% 字号、可访问名称、44px 触控目标、键盘和触摸候选流程通过",
+      "status": "completed"
+    },
+    {
+      "id": "M25", "name": "v1.0 统一动效", "owner": "animate", "depends_on": ["M24"],
+      "objective": "用既有时长令牌统一通知、菜单、短表单与任务反馈，不给写作增加等待",
+      "expected_outputs": ["共享动效契约", "可打断菜单", "通知生命周期", "任务完成焦点"],
+      "verification": "键盘与减少动态即时；快速开关、连续通知、退出 inert 和完成后焦点通过",
+      "status": "completed"
+    },
+    {
+      "id": "M26", "name": "v1.0 候选版验收", "owner": "webapp-testing", "depends_on": ["M24", "M25"],
+      "objective": "完成 Chromium 全回归、WebKit 核心流程、实际更新恢复演练及真机清单",
+      "expected_outputs": ["候选版自动化证据", "实际 Service Worker 演练", "真机放行清单", "本地 RC 预览"],
+      "verification": "本地自动化通过；真实 Safari/输入法/VoiceOver/低端设备保留为正式版阻塞项",
+      "status": "completed"
     }
   ]
 }

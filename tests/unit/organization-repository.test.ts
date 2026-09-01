@@ -78,6 +78,18 @@ it("bulk deletion is reversible through recently deleted", async () => {
   expect((await db.items.get(item.id))?.deletedAt).toBeTruthy();
   await app.restoreItem(item.id); expect((await db.items.get(item.id))?.repeat).toEqual(item.repeat);
 });
+it("moves notes atomically, rejects stale notebooks and rolls back mixed selections", async () => {
+  const { db, app, item: task } = await setup(); const note = await app.createItem({ title: "笔记", kind: "note" });
+  const stamp = new Date().toISOString();
+  await db.notebooks.add({ id: "book", name: "课堂", revision: 1, createdAt: stamp, updatedAt: stamp });
+  await expect(app.organizeItems([note, task], "notebook", [], "book")).rejects.toThrow("只选择笔记");
+  expect((await db.items.get(note.id))?.notebookId).toBeUndefined();
+  await expect(app.organizeItems([note], "notebook", [], "missing")).rejects.toThrow("笔记本已变动");
+  expect(await app.organizeItems([note], "notebook", [], "book")).toBe(1);
+  const moved = (await db.items.get(note.id))!; expect(moved.notebookId).toBe("book");
+  await expect(app.organizeItems([note], "notebook")).rejects.toThrow("记录已变动");
+  await app.organizeItems([moved], "notebook"); expect((await db.items.get(note.id))?.notebookId).toBeUndefined();
+});
 it("round trips v4 metadata and restores it after an older v3 import", async () => {
   const { app, item } = await setup(); await app.updateItem(item.id, { status: "completed" });
   const all = await app.allRecords(); const backup = createFullBackup(all.items, [], "sage", all);

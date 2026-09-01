@@ -20,6 +20,18 @@ async function setup() {
 }
 afterEach(async () => { await Promise.all(databases.splice(0).map(db => db.delete())); });
 
+it("commits a course and first timeslot together without leaving partial courses on failure", async () => {
+  const { db, study, rule } = await setup(); const term = (await db.terms.get("term"))!;
+  const next = { ...rule, id: "new-rule", courseId: "new-course" };
+  await expect(study.createCourse({ name: "新课程" }, { ...next, endTime: "08:00" }, term)).rejects.toThrow();
+  expect(await db.courses.get("new-course")).toBeUndefined();
+  await expect(study.createCourse({ name: "新课程" }, next, { ...term, revision: 0 })).rejects.toThrow("变动");
+  expect(await db.courses.get("new-course")).toBeUndefined();
+  const created = await study.createCourse({ name: "新课程" }, next, term);
+  expect(created.termId).toBe("term"); expect((await db.recurrenceRules.get("new-rule"))?.courseId).toBe(created.id);
+  const standalone = await study.createCourse({ name: "资料" }); expect(standalone.termId).toBeUndefined();
+});
+
 it("keeps one current term and detects stale term/rule saves", async () => {
   const { db, study, term, rule } = await setup();
   await study.saveTerm({ ...term, id: "other", name: "新学期" });

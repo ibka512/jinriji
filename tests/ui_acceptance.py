@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 from playwright.sync_api import expect, sync_playwright
 
 BASE_URL = os.getenv("JINRIJI_BASE_URL", "http://127.0.0.1:4173")
-OUTPUT = Path(os.getenv("JINRIJI_TEST_OUTPUT", "test-results/screenshots-v0.9")).resolve()
+OUTPUT = Path(os.getenv("JINRIJI_TEST_OUTPUT", "test-results/screenshots-v0.10")).resolve()
 OUTPUT.mkdir(parents=True, exist_ok=True)
 FIXED = datetime(2026, 8, 31, 4, 0, tzinfo=timezone.utc)
 assert urlparse(BASE_URL).hostname in ("localhost", "127.0.0.1", "::1"), "Run this suite against a local build only"
@@ -45,8 +45,8 @@ def begin_compose(page, kind="note"):
         page.keyboard.press("Control+k")
     else:
         page.locator("#view-plan .page-header [data-open-compose]:visible, .mobile-quick-add:visible").click()
-    expect(page.locator("#note-editor-page" if kind == "note" else "#compose-layer")).to_be_visible()
-    if kind != "note":
+    expect(page.locator("#note-editor-page" if kind == "note" else "#study-dialog" if kind == "course" else "#compose-layer")).to_be_visible()
+    if kind not in ("note", "course"):
         page.locator(f"[data-entry-type='{kind}']").click()
 
 
@@ -54,6 +54,15 @@ def compose(page, text, kind="note", title="", date="", time=""):
     if kind == "note":
         nav(page, "today")
     begin_compose(page, kind)
+    if kind == "course":
+        page.locator("#study-name").fill(title)
+        page.locator("#study-term").select_option("")
+        page.locator("#study-single-date").fill(date)
+        page.locator("#study-single-time").fill(time)
+        page.locator("#study-save").click()
+        expect(page.locator("#study-dialog")).not_to_be_visible()
+        page.wait_for_function("() => !history.state?.jinrijiModal")
+        return
     page.locator("#entry-title").fill(title)
     if kind != "course":
         page.locator("#quick-entry:visible, .tiptap:visible").fill(text)
@@ -249,7 +258,9 @@ def test_layouts(browser):
             dock = page.locator(".mobile-tab-area").bounding_box()
             assert card["y"] + card["height"] <= dock["y"] - 8, "last card must clear the dock"
         nav(page, "notes")
+        page.locator("#record-filters summary").click()
         page.locator("#record-filter").select_option("note")
+        page.locator("#record-filters summary").click()
         page.locator("#notes-list .record-open").click()
         assert_width(page)
         if width >= 1100:

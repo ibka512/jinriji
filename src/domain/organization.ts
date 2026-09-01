@@ -58,10 +58,30 @@ export function nextRepeatSchedule(item: Item, now = new Date()): { dueAt: strin
   return { dueAt: zonedInstant(next, item.allDay ? "00:00" : fields.time, rule.timeZone), dateOnly: item.allDay ? next : undefined };
 }
 
-export function filterRecords(items: Item[], search: string, filter: string, tag = "", pinnedOnly = false): Item[] {
+const searchableText = new WeakMap<Item, string>();
+function searchText(item: Item): string {
+  let text = searchableText.get(item);
+  if (text === undefined) { text = tagKey(`${item.title}\n${item.body}\n${(item.tags || []).join(" ")}`); searchableText.set(item, text); }
+  return text;
+}
+
+export type RecordSort = "updated" | "created" | "title";
+export function filterRecords(items: Item[], search: string, filter: string, tag = "", pinnedOnly = false, notebookId = "", sort: RecordSort = "updated"): Item[] {
   const needle = tagKey(search.trim());
   return items.filter(item => !item.deletedAt && (filter === "all" || item.kind === filter) &&
+    (!notebookId || (notebookId === "unfiled" ? item.kind === "note" && !item.notebookId : item.notebookId === notebookId)) &&
     (!pinnedOnly || item.pinned) && (!tag || item.tags?.some(value => tagKey(value) === tagKey(tag))) &&
-    tagKey(`${item.title}\n${item.body}\n${(item.tags || []).join(" ")}`).includes(needle))
-    .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id));
+    (!needle || searchText(item).includes(needle)))
+    .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) ||
+      (sort === "title" ? a.title.localeCompare(b.title, "zh-CN") : sort === "created" ? b.createdAt.localeCompare(a.createdAt) : b.updatedAt.localeCompare(a.updatedAt)) || a.id.localeCompare(b.id));
+}
+
+/** Preview normalization changes presentation only, never the saved content. */
+export function searchExcerpt(text: string, search: string): { before: string; match: string; after: string } {
+  const needle = tagKey(search.trim());
+  const normalized = text.normalize("NFKC");
+  const index = needle ? normalized.toLocaleLowerCase().indexOf(needle) : -1;
+  if (index < 0) return { before: text.slice(0, 160), match: "", after: "" };
+  const start = Math.max(0, index - 48), end = Math.min(normalized.length, index + needle.length + 100);
+  return { before: (start ? "…" : "") + normalized.slice(start, index), match: normalized.slice(index, index + needle.length), after: normalized.slice(index + needle.length, end) + (end < normalized.length ? "…" : "") };
 }

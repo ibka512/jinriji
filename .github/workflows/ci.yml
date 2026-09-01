@@ -30,10 +30,11 @@ jobs:
       - name: Install Playwright
         run: |
           python3 -m pip install playwright==1.55.0
-          python3 -m playwright install --with-deps chromium
+          python3 -m playwright install --with-deps chromium webkit
       - name: Browser acceptance
         env:
           JINRIJI_BASE_URL: http://127.0.0.1:4173
+          JINRIJI_TEST_OUTPUT: test-results/screenshots-v1.0
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory dist > /tmp/jinriji-preview.log 2>&1 &
           preview_pid=$!
@@ -48,11 +49,17 @@ jobs:
           python3 tests/organization_acceptance.py
           python3 tests/writing_acceptance.py
           python3 tests/library_acceptance.py
+          python3 tests/maturity_acceptance.py
+          python3 tests/release_acceptance.py
+          JINRIJI_TEST_ENGINE=webkit JINRIJI_TEST_OUTPUT=test-results/screenshots-v1.0-webkit python3 tests/release_acceptance.py
+          python3 tests/update_acceptance.py
       - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: browser-evidence
-          path: test-results/screenshots-v0.9
+          path: |
+            test-results/screenshots-v1.0
+            test-results/screenshots-v1.0-webkit
           if-no-files-found: ignore
           retention-days: 7

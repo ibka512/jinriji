@@ -86,10 +86,21 @@ describe("writing persistence safety", () => {
     await expect(writing.save({ kind: "note", title: "修改", document: textDocument("新文") }, "a", item.revision, true)).rejects.toThrow("quota");
     expect(await db.items.get("a")).toEqual(item);
   });
-  it("retains rich content on conversion and updates it on plain task edits", async () => {
+  it("preserves legacy converted content and refuses silent plain-text flattening", async () => {
     const { writing, app } = setup(); const item = await writing.save({ kind: "note", title: "原文", document: rich }, "a");
     const task = await app.updateItem(item.id, { kind: "task" }); expect(task?.document).toEqual(rich);
-    const changed = await app.updateItem(item.id, { body: "已改正文" }); expect(documentText(changed!.document!)).toBe("已改正文");
+    await expect(app.updateItem(item.id, { body: "已改正文" })).rejects.toThrow("原文未改变");
+    expect((await app.listItems())[0]?.document).toEqual(rich);
+    const updatedDoc = structuredClone(rich); updatedDoc.content!.push({ type: "paragraph", content: [{ type: "text", text: "追加内容" }] });
+    const changed = await app.updateItem(item.id, { document: updatedDoc }); expect(documentText(changed!.document!)).toContain("追加内容");
+  });
+  it("creates an independently editable linked task and leaves the note unchanged", async () => {
+    const { writing, app } = setup(); const note = await writing.save({ kind: "note", title: "来源", document: rich }, "source");
+    const task = await app.createLinkedTask(note.id, note.revision);
+    await app.updateItem(task.id, { body: "执行步骤" }, task.revision);
+    expect((await app.listItems()).find(item => item.id === note.id)).toEqual(note);
+    expect(task).toMatchObject({ sourceNoteId: note.id, kind: "task", document: undefined });
+    await expect(app.createLinkedTask(note.id, 0)).rejects.toThrow("已变动");
   });
   it("migrates drafts once without changing or deleting the legacy source", async () => {
     const { db, drafts } = setup();

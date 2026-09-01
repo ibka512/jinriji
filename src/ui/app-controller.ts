@@ -17,10 +17,11 @@ import { query, queryAll } from "./dom";
 import { showToast } from "./toast";
 import { applyTheme, isThemeName, type ThemeName } from "./theme";
 import { Navigation, type PlanTab, type Route, type ViewName } from "./navigation";
-import { dayKey } from "../domain/dates";
+import { dayKey, startOfWeek } from "../domain/dates";
 import { SegmentedSwitch } from "./segmented-switch";
 import { initializeNavigationIcons } from "./navigation-icons";
 import { OrganizationController } from "../features/entries/organization-controller";
+import { taskFeedback } from "./motion";
 
 interface AppState { view: ViewName; theme: ThemeName; items: Item[]; courses: Course[]; timetable: TimetableData; library: LibraryData }
 const UI_KEY = "jinriji:ui:v0.5";
@@ -44,9 +45,9 @@ export class AppController {
     this.organization = new OrganizationController(repository, () => state.items, this.options, () => this.refresh(), () => this.savePreferences());
     this.editor = new EntryEditor(repository, drafts, async selection => {
       await this.refresh();
-      showToast("已保存", () => this.openDetail(selection), "查看");
+      if (selection.entity === "course" || state.items.find(item => item.id === selection.id)?.kind !== "note") showToast("已保存", () => this.openDetail(selection), "查看");
     }, () => void this.renderDraftBanner(), writing, libraryRepository);
-    this.library = new LibraryController(libraryRepository, () => state.library.notebooks, this.options, () => this.refresh(), draft => this.editor.open(draft, false));
+    this.library = new LibraryController(libraryRepository, () => state.library.notebooks, this.options, () => this.refresh(), draft => this.editor.open(draft, false), () => { this.organization.resetSelection(); renderNotes(state.items, this.options); this.savePreferences(); });
     this.backup = new BackupController(repository, settings, () => this.refresh());
     this.study = new CourseController(timetableRepository, () => ({ courses: state.courses, data: this.options.timetable, view: this.options.courseView }),
       () => this.refresh(), () => { renderTimetable(state.courses, this.options.timetable, this.options.courseView); this.savePreferences(); },
@@ -63,7 +64,7 @@ export class AppController {
       this.requestedNotes.set(draft.id!, { draft, recovered });
       this.navigation.go(draft.revision === undefined ? { view: "notes", newNoteId: draft.id } : { view: "notes", selection: { entity: "item", id: draft.id! }, editing: true }, draft.revision !== undefined && this.navigation.route.selection?.id === draft.id);
     };
-    this.editor.onPageDone = id => { void this.navigation.go(id ? { view: "notes", selection: { entity: "item", id } } : { view: "notes" }, true); };
+    this.editor.onPageDone = (id, scroll = 0) => { const route: Route = id ? { view: "notes", selection: { entity: "item", id } } : { view: "notes" }; this.navigation.rememberScroll(route, scroll); void this.navigation.go(route, true); };
     this.editor.onNoteCommitted = item => {
       const index = state.items.findIndex(record => record.id === item.id);
       if (index < 0) state.items.unshift(item); else state.items[index] = item;
@@ -85,9 +86,12 @@ export class AppController {
       if (typeof saved.courseTermId === "string") this.options.courseView.termId = saved.courseTermId;
       if (typeof saved.tag === "string") this.options.tag = saved.tag;
       this.options.pinnedOnly = saved.pinnedOnly === true;
+      if (typeof saved.notebookId === "string") this.options.notebookId = saved.notebookId;
+      if (["updated", "created", "title"].includes(saved.sort)) this.options.sort = saved.sort;
     } catch { /* View preferences never prevent loading user records. */ }
     query<HTMLInputElement>("#search-records").value = this.options.search;
     query<HTMLSelectElement>("#record-filter").value = this.options.filter;
+    query<HTMLSelectElement>("#record-sort").value = this.options.sort || "updated";
     applyTheme(this.state.theme);
     this.render();
     this.editor.setCourses(this.state.courses);
@@ -127,14 +131,20 @@ export class AppController {
   }
 
   private withFocusPreserved(render: () => void): void {
+    const visible = (element: HTMLElement): boolean => Boolean(element.getClientRects().length) && !element.closest("details:not([open]),[hidden],[inert]");
     const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const attr = active?.hasAttribute("data-entry-check") ? "data-entry-check" : active?.hasAttribute("data-entry-open") ? "data-entry-open" : undefined;
     const id = attr && active ? active.getAttribute(attr) : undefined;
     const parent = active?.closest<HTMLElement>("[data-view-panel]");
+    const peers = parent ? Array.from(parent.querySelectorAll<HTMLElement>("[data-entry-check]")).filter(visible) : [];
+    const index = peers.indexOf(active!);
+    const neighbourIds = index < 0 ? [] : [...peers.slice(index + 1), ...peers.slice(0, index).reverse()].map(element => element.getAttribute("data-entry-check"));
     render();
     if (id && attr && active && !active.isConnected && parent) {
-      const replacement = Array.from(parent.querySelectorAll<HTMLElement>(`[${attr}]`)).find(element => element.getAttribute(attr) === id && element.getClientRects().length);
-      (replacement || parent.querySelector<HTMLElement>("h1"))?.focus({ preventScroll: true });
+      const replacement = Array.from(parent.querySelectorAll<HTMLElement>(`[${attr}]`)).find(element => element.getAttribute(attr) === id && visible(element));
+      const checks = Array.from(parent.querySelectorAll<HTMLElement>("[data-entry-check]"));
+      const neighbour = neighbourIds.map(id => checks.find(element => element.getAttribute("data-entry-check") === id && visible(element))).find(Boolean);
+      (replacement || neighbour || parent.querySelector<HTMLElement>("h1"))?.focus({ preventScroll: true });
     }
   }
 
@@ -150,7 +160,7 @@ export class AppController {
   }
 
   private savePreferences(): void {
-    try { localStorage.setItem(UI_KEY, JSON.stringify({ search: this.options.search, filter: this.options.filter, completedOpen: this.options.completedOpen, planTab: this.lastPlanTab, courseTermId: this.options.courseView.termId, tag: this.options.tag, pinnedOnly: this.options.pinnedOnly })); }
+    try { localStorage.setItem(UI_KEY, JSON.stringify({ search: this.options.search, filter: this.options.filter, completedOpen: this.options.completedOpen, planTab: this.lastPlanTab, courseTermId: this.options.courseView.termId, tag: this.options.tag, pinnedOnly: this.options.pinnedOnly, notebookId: this.options.notebookId, sort: this.options.sort })); }
     catch { showToast("界面偏好未能保存，记录不受影响"); }
   }
 
@@ -158,6 +168,11 @@ export class AppController {
     const keepTabFocus = this.state.view === "plan" && route.view === "plan" && document.activeElement?.closest(".segmented");
     this.organization.resetSelection();
     this.state.view = route.view;
+    document.body.dataset.currentView = route.view;
+    const courseDetail = route.view === "plan" && route.selection?.entity === "course";
+    const detail = query<HTMLElement>("#entry-detail");
+    (courseDetail ? query("#plan-course-detail") : query(".records-workspace")).append(detail);
+    query("#view-plan").classList.toggle("has-course-detail", Boolean(courseDetail));
     this.options.selection = route.selection;
     queryAll<HTMLElement>("[data-view-panel]").forEach(panel => panel.classList.toggle("is-active", panel.dataset.viewPanel === route.view));
     queryAll<HTMLElement>("[data-view]").forEach(button => {
@@ -191,7 +206,7 @@ export class AppController {
     this.savePreferences();
   }
 
-  private openDetail(selection: Selection): void { this.navigation.go({ view: "notes", selection }); }
+  private openDetail(selection: Selection): void { this.navigation.go(selection.entity === "course" ? { view: "plan", tab: "courses", selection } : { view: "notes", selection }); }
 
   prepareForUpdate(): boolean { return this.study.prepareForUpdate() && this.editor.prepareForUpdate(); }
 
@@ -211,20 +226,25 @@ export class AppController {
       const checkbox = event.target;
       if (!(checkbox instanceof HTMLInputElement) || !checkbox.dataset.entryCheck) return;
       const id = checkbox.dataset.entryCheck;
-      if (this.pending.has(id)) return;
-      this.pending.add(id); checkbox.disabled = true;
+      if (this.pending.has(id)) { checkbox.checked = !checkbox.checked; return; }
+      this.pending.add(id);
+      // Keep the keyboard's focus anchor while persistence runs.
+      checkbox.disabled = document.body.dataset.motionInput !== "keyboard";
+      checkbox.setAttribute("aria-disabled", "true");
+      const feedback = taskFeedback(checkbox);
       void this.run(async () => {
         try {
           const current = this.state.items.find(item => item.id === id);
           if (!current) throw new Error("记录已变动，请刷新后重试");
           const completed = checkbox.checked;
           const updated = await this.repository.updateItem(id, { status: completed ? "completed" : "open" }, current.revision);
+          await feedback.settled;
           await this.refresh();
           showToast(completed ? updated?.repeatNextId ? "已完成，已安排下一次" : "已完成" : "已恢复待办", completed && updated ? () => void this.run(async () => {
             await this.repository.updateItem(id, { status: "open" }, updated.revision); await this.refresh(); showToast("已撤销完成");
           }) : undefined);
         } catch (cause) { checkbox.checked = !checkbox.checked; throw cause; }
-        finally { this.pending.delete(id); checkbox.disabled = false; }
+        finally { feedback.clear(); this.pending.delete(id); checkbox.disabled = false; checkbox.removeAttribute("aria-disabled"); }
       });
     });
     const search = query<HTMLInputElement>("#search-records");
@@ -250,7 +270,8 @@ export class AppController {
       if (event.key === "/") { event.preventDefault(); void this.navigation.go({ view: "notes" }).then(() => { search.focus(); search.select(); }); }
       if (event.key.toLowerCase() === "n") {
         event.preventDefault(); const type = this.state.view === "plan" ? this.lastPlanTab === "courses" ? "course" : this.lastPlanTab === "tasks" ? "task" : "schedule" : "note";
-        void this.run(async () => this.editor.openNew(type));
+        if (type === "course") this.study.openNewCourse();
+        else void this.run(async () => this.editor.openNew(type, this.composeDate(type)));
       }
       if (event.key === "?") {
         event.preventDefault(); void this.navigation.go({ view: "settings" }).then(() => {
@@ -276,7 +297,7 @@ export class AppController {
     if (!(event.target instanceof Element)) return;
     if (event.target.closest("#entry-detail .detail-body") && !event.target.closest("a,button,input") && window.getSelection()?.isCollapsed) {
       const item = this.state.items.find(item => item.id === this.options.selection?.id && item.kind === "note" && !item.deletedAt);
-      if (item) { await this.editor.openRecord(item); return; }
+      if (item) { await this.editor.openRecord(item, false, window.scrollY); return; }
     }
     const target = event.target.closest<HTMLElement>("button, a.brand, a[data-note-id]");
     if (!target || target instanceof HTMLButtonElement && target.disabled) return;
@@ -289,7 +310,8 @@ export class AppController {
     }
     if (target.hasAttribute("data-open-compose")) {
       const type = data.composeType || (this.state.view === "plan" ? this.lastPlanTab === "courses" ? "course" : this.lastPlanTab === "week" ? "schedule" : "task" : "note");
-      await this.editor.openNew(type as "note" | "task" | "schedule" | "course", this.state.view === "today" && type !== "note" ? dayKey() : "");
+      if (type === "course") { this.study.openNewCourse(); return; }
+      await this.editor.openNew(type as "note" | "task" | "schedule" | "course", data.composeDate || this.composeDate(type));
     }
     if (data.courseNote) await this.editor.openNew("note", "", data.courseNote);
     if (target.id === "resume-draft") { const draft = (await this.editor.drafts.list())[0]; if (draft) this.editor.open(draft); }
@@ -297,11 +319,17 @@ export class AppController {
     if (target.hasAttribute("data-detail-back")) this.navigation.back();
     if (data.entryEdit) {
       const record = data.entity === "course" ? this.state.courses.find(course => course.id === data.entryEdit) : this.state.items.find(item => item.id === data.entryEdit);
-      if (record) await this.editor.openRecord(record);
+      if (record) await this.editor.openRecord(record, false, this.options.selection?.id === record.id ? window.scrollY : undefined);
     }
     if (data.entryConvert) {
-      await this.repository.updateItem(data.entryConvert, { kind: "task", status: "open" }); await this.refresh();
-      this.navigation.go({ view: "plan", tab: "tasks" }); showToast("已转为待办");
+      if (this.pending.has(data.entryConvert)) return;
+      const note = this.state.items.find(item => item.id === data.entryConvert);
+      if (!note) return;
+      this.pending.add(note.id); target.setAttribute("aria-busy", "true");
+      try {
+        const task = await this.repository.createLinkedTask(note.id, note.revision); await this.refresh();
+        showToast("已创建待办，原文保留", () => this.openDetail({ entity: "item", id: task.id }), "查看待办");
+      } finally { this.pending.delete(note.id); target.removeAttribute("aria-busy"); }
     }
     const id = data.entryDelete || data.entryRestore;
     if (id && !this.pending.has(id)) {
@@ -327,5 +355,15 @@ export class AppController {
     if (data.theme && isThemeName(data.theme)) {
       await this.settings.set("theme", data.theme); this.state.theme = data.theme; applyTheme(data.theme);
     }
+  }
+
+  private composeDate(type: string): string {
+    if (type === "schedule") {
+      if (this.state.view === "plan" && this.options.weekOffset) {
+        const date = startOfWeek(new Date()); date.setDate(date.getDate() + this.options.weekOffset * 7); return dayKey(date);
+      }
+      return dayKey();
+    }
+    return this.state.view === "today" && type === "task" ? dayKey() : "";
   }
 }

@@ -115,7 +115,6 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, input:focus-visib
 .brand__text small { margin-top:7px; font-size:10px; letter-spacing:.22em; color:var(--ink-soft); }
 .nav-list { display:grid; gap:6px; flex:none; }
 .nav-item { border:0; background:transparent; min-height:48px; padding:0 14px; display:flex; align-items:center; gap:13px; border-radius:15px; color:var(--ink-soft); cursor:pointer; transition:background var(--duration-state) ease,color var(--duration-state) ease,transform var(--duration-press) var(--ease-out); }
-.nav-item:hover { background:var(--control-hover); color:var(--ink); }
 .nav-item:active { transform:scale(.98); }
 .nav-item.is-active { color:var(--accent-deep); background:var(--selected-bg); box-shadow:none; font-weight:600; }
 .nav-icon { display:grid; place-items:center; width:22px; height:22px; flex:none; }
@@ -129,7 +128,6 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, input:focus-visib
 .progress { height:4px; background:rgba(41,54,44,.09); border-radius:99px; overflow:hidden; margin-bottom:8px; }
 .progress span { display:block; height:100%; background:var(--accent); border-radius:inherit; }
 .profile-button { border:0; border-radius:14px; background:transparent; display:flex; text-align:left; gap:10px; align-items:center; padding:12px 5px 4px; cursor:pointer; transition:background var(--duration-state) ease,transform var(--duration-press) var(--ease-out); }
-.profile-button:hover { background:var(--control-hover); }
 .profile-button:active { transform:scale(.98); }
 .profile-button > span:last-child { display:flex; flex-direction:column; }
 .profile-button small { font-size:11px; color:var(--ink-soft); }
@@ -145,11 +143,9 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, input:focus-visib
 .compact-header { align-items:flex-end; }
 .eyebrow { display:block; color:var(--accent-deep); font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; }
 .icon-button { width:44px; height:44px; border-radius:50%; border:1px solid var(--line); background:var(--control-bg); display:grid; place-items:center; cursor:pointer; transition:transform var(--duration-press) var(--ease-out),background var(--duration-state) ease; }
-.icon-button:hover { background:var(--control-hover); }
 .icon-button:active { transform:scale(.94); }
 .text-button { border:0; background:none; color:var(--accent-deep); cursor:pointer; font-size:12px; }
 .primary-button { min-height:46px; border:0; border-radius:var(--radius-control); padding:0 18px; color:var(--on-action); background:var(--action-bg); box-shadow:0 8px 20px color-mix(in srgb, var(--accent) 28%, transparent); cursor:pointer; transition:transform var(--duration-press) var(--ease-out),filter var(--duration-state) ease,opacity var(--duration-state) ease; }
-.primary-button:hover { filter:brightness(1.08); }
 .primary-button:active { transform:scale(.97); }
 
 .today-grid { display:grid; grid-template-columns:minmax(0,1.8fr) minmax(160px,.8fr); gap:16px; }
@@ -186,7 +182,6 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, input:focus-visib
 .timeline-dot { width:8px; height:8px; border-radius:50%; box-shadow:0 0 0 5px rgba(50,60,52,.04); }
 .timeline-dot.sage { background:var(--accent); }.timeline-dot.persimmon{background:var(--tertiary)}.timeline-dot.blue{background:#647b89}.timeline-dot.ink{background:var(--ink)}
 .check-button { width:26px; height:26px; border:1px solid var(--control-edge); background:var(--field-bg); border-radius:50%; cursor:pointer; position:relative; }
-.check-button:hover { border-color:var(--accent); }
 .check-button.is-done::after { content:"✓"; position:absolute; inset:0; display:grid; place-items:center; color:var(--on-action); background:var(--action-bg); border-radius:50%; }
 .timeline-item:has(.check-button.is-done) strong { text-decoration:line-through; color:var(--ink-soft); }
 .people { display:flex; }
@@ -215,7 +210,6 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, input:focus-visib
 .note-card footer { display:flex; justify-content:space-between; color:var(--accent-deep); font-size:11px; margin-top:26px; }
 .note-actions { display:flex; gap:5px; }
 .note-actions button { min-height:32px; border:0; border-radius:9px; padding:3px 9px; color:var(--ink-soft); background:var(--control-bg); cursor:pointer; font-size:11px; }
-.note-actions button:hover { color:var(--accent-deep); background:var(--control-hover); }
 .note-card--feature { grid-row:span 2; min-height:436px; padding-top:32px; }
 .note-card--feature p { font:400 18px/2 var(--serif); margin-top:42px; }
 .note-card--warm { background:var(--paper-warm); }
@@ -252,7 +246,6 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, input:focus-visib
 .task-row small { color:var(--ink-soft); font-size:11px; }
 .task-row em { border-radius:99px; padding:3px 7px; color:var(--event-warm-ink); background:var(--event-warm-bg); font-size:10px; font-style:normal; }
 .entry-action { width:34px; height:34px; border:0; border-radius:10px; background:transparent; color:var(--ink-soft); cursor:pointer; }
-.entry-action:hover { background:var(--control-hover); color:var(--danger); }
 .course-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
 .course-card { position:relative; overflow:hidden; min-height:190px; padding:24px; }
 .course-card::before { content:""; position:absolute; inset:0 auto 0 0; width:4px; background:var(--accent); }
@@ -281,7 +274,6 @@ button:focus-visible, a:focus-visible, textarea:focus-visible, input:focus-visib
 .data-actions { display:grid; margin-top:12px; }
 .settings-action { display:flex; align-items:center; gap:12px; min-height:56px; width:100%; padding:12px 0; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--ink); text-align:left; font-size:14px; cursor:pointer; }
 .settings-action:last-child { border-bottom:0; }
-.settings-action:hover { background:var(--control-hover); }
 .settings-action:active { background:var(--selected-bg); }
 .file-button { position:relative; }
 .file-button:focus-within { outline:2px solid var(--focus-ring); outline-offset:3px; }

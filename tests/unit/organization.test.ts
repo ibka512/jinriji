@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Item, TaskRepeat } from "../../src/domain/models";
-import { filterRecords, nextRepeatSchedule, normalizeTags, validateOrganization } from "../../src/domain/organization";
+import { filterRecords, nextRepeatSchedule, normalizeTags, validateOrganization, searchExcerpt } from "../../src/domain/organization";
 import { zonedInstant } from "../../src/domain/timetable";
 
 function task(date = "2026-08-31", frequency: TaskRepeat["frequency"] = "daily", zone = "Asia/Shanghai", time?: string): Item {
@@ -10,6 +10,21 @@ function task(date = "2026-08-31", frequency: TaskRepeat["frequency"] = "daily",
 }
 
 describe("record organization", () => {
+  it("filters notebook scope before selection and sorts without mutating records", () => {
+    const a = { ...task(), id: "a", kind: "note" as const, title: "B", notebookId: "book" };
+    const b = { ...a, id: "b", title: "A", notebookId: undefined };
+    expect(filterRecords([a, b], "", "all", "", false, "book")).toEqual([a]);
+    expect(filterRecords([a, b, task()], "", "all", "", false, "unfiled")).toEqual([b]);
+    expect(filterRecords([a, b], "", "all", "", false, "", "title")).toEqual([b, a]);
+    expect(a.title).toBe("B");
+  });
+  it("returns a normalized match with surrounding context, never generated markup", () => {
+    const text = "前文".repeat(200) + "ＡＢＣ<script>" + "后文".repeat(100);
+    const result = searchExcerpt(text, "abc");
+    expect(result.match).toBe("ABC"); expect(result.before.startsWith("…")).toBe(true);
+    expect(result.after).toContain("<script>"); expect(result.after.endsWith("…")).toBe(true);
+    expect(searchExcerpt("正文", "缺失")).toEqual({ before: "正文", match: "", after: "" });
+  });
   it("normalizes fullwidth tags and deduplicates without splitting ordinary spaces", () => {
     expect(normalizeTags(" 学习，#学习,ＷＥＢ,web,读书 笔记 ")).toEqual(["学习", "WEB", "读书 笔记"]);
   });

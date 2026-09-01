@@ -93,7 +93,3 @@ body.writing-focus #note-editor-page { max-width:850px; margin:auto; }
   .template-picker { margin-left:0; width:100%; }
   .writer-toolbar { margin-inline:-4px; }
 }
-@media(prefers-reduced-motion:no-preference) {
-  .note-editor-page { animation:note-arrive 140ms ease-out; }
-  @keyframes note-arrive { from { opacity:.6; transform:translateY(3px); } to { opacity:1; transform:none; } }
-}

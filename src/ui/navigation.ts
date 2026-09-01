@@ -12,12 +12,16 @@ export function parseRoute(hash: string, fallback: ViewName = "today"): Route {
   if (view === "notes" && (tab === "item" || tab === "course") && encodedId) {
     try { return { view: "notes", selection: { entity: tab, id: decodeURIComponent(encodedId) }, ...(mode === "edit" && tab === "item" ? { editing: true } : {}) }; } catch { return { view: "notes" }; }
   }
+  if (view === "plan" && tab === "course" && encodedId) {
+    try { return { view: "plan", tab: "courses", selection: { entity: "course", id: decodeURIComponent(encodedId) } }; } catch { return { view: "plan", tab: "courses" }; }
+  }
   if (view === "plan") return { view, tab: tab === "tasks" || tab === "courses" ? tab : "week" };
   return { view: view === "today" || view === "notes" || view === "settings" ? view : fallback };
 }
 
 export function routeHash(route: Route): string {
   if (route.newNoteId) return `#notes/new/${encodeURIComponent(route.newNoteId)}`;
+  if (route.view === "plan" && route.selection?.entity === "course") return `#plan/course/${encodeURIComponent(route.selection.id)}`;
   if (route.selection) return `#notes/${route.selection.entity}/${encodeURIComponent(route.selection.id)}${route.editing ? "/edit" : ""}`;
   return route.view === "plan" ? `#plan/${route.tab || "week"}` : `#${route.view}`;
 }
@@ -45,9 +49,10 @@ export class Navigation {
   go(route: Route, replace = false): Promise<void> {
     return this.request(routeHash(route), false, replace);
   }
+  rememberScroll(route: Route, scroll: number): void { this.scrolls.set(routeHash(route), scroll); }
 
   back(): void {
-    if (history.state?.returnTo) history.back(); else this.go({ view: "notes" });
+    if (history.state?.returnTo) history.back(); else this.go(this.route.view === "plan" ? { view: "plan", tab: "courses" } : { view: "notes" });
   }
 
   private request(hash: string, fromHistory: boolean, replace = false): Promise<void> {
