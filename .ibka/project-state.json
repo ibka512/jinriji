@@ -6,9 +6,9 @@
   "status": "completed",
   "current_module": "M29",
   "created_at": "2026-08-30T09:51:40.317602+00:00",
-  "updated_at": "2026-09-01T16:45:00+08:00",
+  "updated_at": "2026-09-01T17:08:00+08:00",
   "local_version": "1.0.0-rc.2",
-  "release_status": "v1.0.0-rc.2 本地候选已完成页面式事项编辑与 AI 开发接力入口，正在执行完整验证，尚未提交、推送或部署；线上仍为 v1.0.0-rc.1。线上地址：https://ibka512.github.io/jinriji/。",
+  "release_status": "v1.0.0-rc.2 已发布：功能与开发接力提交 45ad15b 已推送 main；Quality checks #33489884411 与 GitHub Pages #33489884425 均通过；线上页面式待办编辑、版本、Manifest、中文衬线与 Service Worker 缓存已复核。线上地址：https://ibka512.github.io/jinriji/。",
   "constraints": [
     "公开 GitHub 仓库并使用 GitHub Pages 托管",
     "手机竖屏、平板与 Web 横屏自适应",
@@ -90,6 +90,7 @@
     "v0.7 完整 v4 备份与旧格式兼容、76 个单元测试、20 组浏览器流程及 41 张截图"
   ],
   "verifications": [
+    "M29 提交 45ad15b 已推送 main；Quality checks #33489884411 用时 5m54s 成功，Pages #33489884425 成功；线上显示 1.0.0-rc.2，待办为 entry-editor-page 且无打开 dialog，缓存 jinriji-1.0.0-rc.2-3bb99392a5a3 接管",
     "M29 本地统一 npm run test:browser 通过 60 组：Chromium 51、WebKit 8、真实 Service Worker 更新 1；主 JS 660.05kB/gzip 208.31kB，保留既有体积提示",
     "M28 新增 npm run test:browser:core 已从生产构建启动隔离服务，并通过核心 9 组与页面式事项 3 组流程",
     "M27 TypeScript、14 个文件 112 项单元测试、生产构建与 git diff --check 通过；页面式编辑 3 组专项流程、Chromium RC 8 组、既有核心/课程/整理/写作/笔记工作区回归通过",
@@ -156,6 +157,6 @@
     {"id": "M26", "status": "completed"},
     {"id": "M27", "status": "completed"},
     {"id": "M28", "status": "completed"},
-    {"id": "M29", "status": "active"}
+    {"id": "M29", "status": "completed"}
   ]
 }

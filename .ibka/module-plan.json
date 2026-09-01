@@ -244,7 +244,7 @@
       "objective": "完成本地全回归、提交推送、远程质量检查、GitHub Pages 部署和线上核对",
       "expected_outputs": ["v1.0.0-rc.2", "main 提交", "远程 CI 与 Pages", "线上验证证据"],
       "verification": "Quality checks 与 Pages 均成功，线上版本、编辑页、字体、图标和 Service Worker 接管通过",
-      "status": "active"
+      "status": "completed"
     }
   ]
 }
