@@ -1,4 +1,13 @@
-import { showToast } from "../ui/toast";
+import { UPDATE_AVAILABLE_EVENT, type UpdateAvailableDetail } from "./events";
+
+function announceUpdate(action: () => void): void {
+  const detail: UpdateAvailableDetail = {
+    message: "新版本已经准备好",
+    action,
+    label: "更新",
+  };
+  window.dispatchEvent(new CustomEvent<UpdateAvailableDetail>(UPDATE_AVAILABLE_EVENT, { detail }));
+}
 
 function offerUpdate(registration: ServiceWorkerRegistration, onAccept: () => boolean): void {
   if (!registration.waiting) return;
@@ -11,7 +20,7 @@ function offerUpdate(registration: ServiceWorkerRegistration, onAccept: () => bo
   };
   if (status) status.textContent = "新版本已就绪，完成当前编辑后即可更新。";
   if (button) { button.disabled = false; button.textContent = "立即更新"; button.onclick = apply; }
-  showToast("新版本已经准备好", apply, "更新");
+  announceUpdate(apply);
 }
 
 export function registerServiceWorker(prepareForUpdate: () => boolean = () => true): void {

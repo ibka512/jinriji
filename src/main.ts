@@ -8,6 +8,7 @@ import { IndexedDraftStore } from "./data/indexed-drafts";
 import { WritingRepository } from "./data/writing-repository";
 import { LibraryRepository } from "./data/library-repository";
 import { initializeOfflineStatus } from "./platform/offline-status";
+import { UPDATE_AVAILABLE_EVENT, type UpdateAvailableDetail } from "./platform/events";
 import { TimetableRepository } from "./data/timetable-repository";
 import { db } from "./data/database";
 import { migrateLocalStorage } from "./data/migrate-local-storage";
@@ -56,6 +57,11 @@ async function bootstrap(): Promise<void> {
     showToast(`已安全迁移 ${migration.sourceCount} 条旧记录`);
   }
 }
+
+window.addEventListener(UPDATE_AVAILABLE_EVENT, ((event: CustomEvent<UpdateAvailableDetail>) => {
+  const { message, action, label } = event.detail;
+  showToast(message, action, label);
+}) as EventListener);
 
 void bootstrap().catch((error: unknown) => {
   console.error("今日记启动失败", error);
