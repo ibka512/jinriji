@@ -6,6 +6,7 @@ import { characterCount, documentMarkdown, documentText, MAX_NOTE_LENGTH, noteEx
 import { query, queryAll, safeHTML as escape } from "../../ui/dom";
 import type { Item } from "../../domain/models";
 import { hydrateImages } from "./local-images";
+import { DrawingBoard } from "./drawing-board";
 import { documentReferences } from "../../domain/notebooks";
 
 const button = (action: string, label: string, symbol = label): string => `<button type="button" data-write="${action}" aria-label="${label}" title="${label}">${symbol}</button>`;
@@ -56,7 +57,7 @@ export class RichWriter {
     const tools = query<HTMLElement>(".writer-tools", this.root);
     const more = document.createElement("details"); more.className = "writer-more";
     more.innerHTML = '<summary>更多</summary>'; tools.before(more); more.append(tools);
-    tools.insertAdjacentHTML("afterbegin", `${button("note-link", "链接笔记", "笔记链接")}${button("selection-task", "选段转待办")}${button("image", "插入图片", "图片")}${button("table", "插入表格", "表格")}`);
+    tools.insertAdjacentHTML("afterbegin", `${button("note-link", "链接笔记", "笔记链接")}${button("selection-task", "选段转待办")}${button("image", "插入图片", "图片")}${button("drawing", "手绘画板", "画板")}${button("table", "插入表格", "表格")}`);
     this.root.insertAdjacentHTML("beforeend", '<input type="file" id="writer-image" accept="image/png,image/jpeg,image/webp" hidden>');
     query(".writer-chrome", this.root).insertAdjacentHTML("afterend", `<div class="writer-insert" hidden><label>链接到笔记<input type="search" id="note-link-search" placeholder="搜索笔记" autocomplete="off"></label><div id="note-link-results"></div>${button("unlink-note", "移除笔记链接")}${button("close-insert", "关闭插入", "关闭")}</div><div class="table-tools" hidden>${button("row-add", "在下方添加行", "+ 行")}${button("column-add", "在右侧添加列", "+ 列")}${button("row-delete", "删除当前行", "删行")}${button("column-delete", "删除当前列", "删列")}${button("table-delete", "删除表格")}</div>`);
     const toolbar = query<HTMLElement>(".writer-toolbar", this.root);
@@ -98,16 +99,7 @@ export class RichWriter {
     });
     query("#writer-image").addEventListener("change", event => {
       const input = event.target as HTMLInputElement; const file = input.files?.[0]; input.value = "";
-      if (!file || !this.onImage || !this.editor) return;
-      const editor = this.editor;
-      const cursor = editor.state.selection.$from;
-      const position = cursor.depth ? cursor.after(1) : editor.state.doc.content.size;
-      void this.perform(async () => {
-        const id = await this.onImage!(file);
-        if (this.editor !== editor || editor.isDestroyed) return;
-        editor.chain().insertContentAt(position, [{ type: "localImage", attrs: { assetId: id, alt: file.name.slice(0, 500) } }, { type: "paragraph" }]).run();
-        hydrateImages(this.root);
-      });
+      if (file) void this.insertImage(file);
     });
     this.root.addEventListener("pointerdown", event => {
       if ((event.target as Element).closest(".writer-toolbar button,.writer-tools button,.table-tools button")) event.preventDefault();
@@ -231,6 +223,7 @@ export class RichWriter {
         if (text && this.onSelectionTask) void this.perform(() => this.onSelectionTask!(text)); break;
       }
       case "image": query<HTMLInputElement>("#writer-image").click(); break;
+      case "drawing": this.openDrawing(); break;
       case "table":
         if (this.editor.isActive("table")) { this.onError("请先将光标移到表格外"); break; }
         chain.insertContent([{ type: "table", content: Array.from({ length: 3 }, (_, index) => ({ type: "tableRow", content: Array.from({ length: 3 }, () => ({ type: index ? "tableCell" : "tableHeader", content: [{ type: "paragraph" }] })) })) }, { type: "paragraph" }]).run(); break;
@@ -265,6 +258,25 @@ export class RichWriter {
     // A completed tool action returns the canvas to the foreground.
     query<HTMLDetailsElement>(".writer-more").open = false;
     this.updateTools();
+  }
+
+  private readonly board = new DrawingBoard();
+
+  private async insertImage(file: File): Promise<void> {
+    if (!this.onImage || !this.editor) return;
+    const editor = this.editor;
+    const cursor = editor.state.selection.$from;
+    const position = cursor.depth ? cursor.after(1) : editor.state.doc.content.size;
+    await this.perform(async () => {
+      const id = await this.onImage!(file);
+      if (this.editor !== editor || editor.isDestroyed) return;
+      editor.chain().insertContentAt(position, [{ type: "localImage", attrs: { assetId: id, alt: file.name.slice(0, 500) } }, { type: "paragraph" }]).run();
+      hydrateImages(this.root);
+    });
+  }
+
+  private openDrawing(): void {
+    this.board.open(file => this.insertImage(file));
   }
 
   private renderNoteLinks(): void {
